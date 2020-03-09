@@ -51,16 +51,20 @@
 /**
  * @brief STM32L5xx HAL Driver version number
    */
-#define STM32L5XX_HAL_VERSION_MAIN   (0x00U) /*!< [31:24] main version */
-#define STM32L5XX_HAL_VERSION_SUB1   (0x06U) /*!< [23:16] sub1 version */
-#define STM32L5XX_HAL_VERSION_SUB2   (0x00U) /*!< [15:8]  sub2 version */
+#define STM32L5XX_HAL_VERSION_MAIN   (0x01U) /*!< [31:24] main version */
+#define STM32L5XX_HAL_VERSION_SUB1   (0x00U) /*!< [23:16] sub1 version */
+#define STM32L5XX_HAL_VERSION_SUB2   (0x02U) /*!< [15:8]  sub2 version */
 #define STM32L5XX_HAL_VERSION_RC     (0x00U) /*!< [7:0]  release candidate */
 #define STM32L5XX_HAL_VERSION        ((STM32L5XX_HAL_VERSION_MAIN  << 24U)\
                                       |(STM32L5XX_HAL_VERSION_SUB1 << 16U)\
                                       |(STM32L5XX_HAL_VERSION_SUB2 << 8U )\
                                       |(STM32L5XX_HAL_VERSION_RC))
 
-#define VREFBUF_TIMEOUT_VALUE        10U   /* 10 ms (to be confirmed) */
+#define VREFBUF_TIMEOUT_VALUE        10U   /*!<  10 ms (to be confirmed) */
+#define VREFBUF_SC0_CAL_ADDR         ((uint8_t *) (0x0BFA0579UL)) /*!<  Address of VREFBUF trimming value for VRS=0,
+                                                                        VREF_SC0 in STM32L5 datasheet */
+#define VREFBUF_SC1_CAL_ADDR         ((uint8_t *) (0x0BFA0530UL)) /*!<  Address of VREFBUF trimming value for VRS=1,
+                                                                        VREF_SC1 in STM32L5 datasheet */
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -582,14 +586,31 @@ void HAL_SYSCFG_SRAM2Erase(void)
   *                                                This requires VDDA equal to or higher than 2.4 V.
   *            @arg SYSCFG_VREFBUF_VOLTAGE_SCALE1: VREF_OUT1 around 2.5 V.
   *                                                This requires VDDA equal to or higher than 2.8 V.
+  * @note   Retrieve the TrimmingValue from factory located at
+  *         VREFBUF_SC0_CAL_ADDR or VREFBUF_SC1_CAL_ADDR addresses.
   * @retval None
   */
 void HAL_SYSCFG_VREFBUF_VoltageScalingConfig(uint32_t VoltageScaling)
 {
+  uint32_t TrimmingValue;
+
   /* Check the parameters */
   assert_param(IS_SYSCFG_VREFBUF_VOLTAGE_SCALE(VoltageScaling));
 
   MODIFY_REG(VREFBUF->CSR, VREFBUF_CSR_VRS, VoltageScaling);
+
+  /* Restrieve Calibration data and store them into trimming field */
+  if (VoltageScaling == SYSCFG_VREFBUF_VOLTAGE_SCALE0)
+  {
+    TrimmingValue = ((uint32_t) *VREFBUF_SC0_CAL_ADDR) & 0x3FU;
+  }
+  else
+  {
+    TrimmingValue = ((uint32_t) *VREFBUF_SC1_CAL_ADDR) & 0x3FU;
+  }
+  assert_param(IS_SYSCFG_VREFBUF_TRIMMING(TrimmingValue));
+
+  HAL_SYSCFG_VREFBUF_TrimmingConfig(TrimmingValue);
 }
 
 /**
@@ -657,10 +678,10 @@ void HAL_SYSCFG_DisableVREFBUF(void)
 
 /**
   * @brief  Enable the I/O analog switch voltage booster
-  *
+  * @note   Insure low VDDA voltage operation with I/O analog switch control
   * @retval None
   */
-void HAL_SYSCFG_EnableIOAnalogSwitchBooster(void)
+void HAL_SYSCFG_EnableIOAnalogBooster(void)
 {
   MODIFY_REG(SYSCFG->CFGR1, (SYSCFG_CFGR1_BOOSTEN | SYSCFG_CFGR1_ANASWVDD), SYSCFG_CFGR1_BOOSTEN);
 }
@@ -670,7 +691,7 @@ void HAL_SYSCFG_EnableIOAnalogSwitchBooster(void)
   *
   * @retval None
   */
-void HAL_SYSCFG_DisableIOAnalogSwitchBooster(void)
+void HAL_SYSCFG_DisableIOAnalogBooster(void)
 {
   CLEAR_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_BOOSTEN);
 }

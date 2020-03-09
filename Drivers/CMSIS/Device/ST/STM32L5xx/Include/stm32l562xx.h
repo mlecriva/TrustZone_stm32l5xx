@@ -50,7 +50,7 @@ extern "C" {
 /* ================                                Interrupt Number Definition                                ================ */
 /* =========================================================================================================================== */
 
-typedef enum IRQn
+typedef enum
 {
 /* =======================================  ARM Cortex-M33 Specific Interrupt Numbers  ======================================= */
   Reset_IRQn                = -15,    /*!< -15 Reset Vector, invoked on Power up and warm reset             */
@@ -478,7 +478,7 @@ typedef struct
 } DFSDM_Channel_TypeDef;
 
 /**
-  * @brief Debug MCU  - TODO review for STM32L5 to be done
+  * @brief Debug MCU
   */
 typedef struct
 {
@@ -486,7 +486,7 @@ typedef struct
   __IO uint32_t CR;          /*!< Debug MCU configuration register,   Address offset: 0x04 */
   __IO uint32_t APB1FZR1;    /*!< Debug MCU APB1 freeze register 1,   Address offset: 0x08 */
   __IO uint32_t APB1FZR2;    /*!< Debug MCU APB1 freeze register 2,   Address offset: 0x0C */
-  __IO uint32_t APB2FZ;      /*!< Debug MCU APB2 freeze register,     Address offset: 0x10 */
+  __IO uint32_t APB2FZR;     /*!< Debug MCU APB2 freeze register,     Address offset: 0x10 */
 } DBGMCU_TypeDef;
 
 /**
@@ -1757,12 +1757,87 @@ typedef struct
 #define FMC_Bank1E_R_BASE_S   (FMC_R_BASE_S + 0x0104UL)
 #define FMC_Bank3_R_BASE_S    (FMC_R_BASE_S + 0x0080UL)
 
-/* Debug MCU registers base address */
+/*!< Debug MCU registers base address */
 #define DBGMCU_BASE           (0xE0044000UL)
 
 #define PACKAGE_BASE          (0x0BFA0500UL)        /*!< Package data register base address     */
 #define UID_BASE              (0x0BFA0590UL)        /*!< Unique device ID register base address */
 #define FLASHSIZE_BASE        (0x0BFA05E0UL)        /*!< Flash size data register base address  */
+
+/*!< Internal Flash size */
+#define FLASH_SIZE            ((((*((uint16_t *)FLASHSIZE_BASE)) == 0xFFFFU)) ? 0x80000U : \
+                               ((((*((uint16_t *)FLASHSIZE_BASE)) == 0x0000U)) ? 0x80000U : \
+                                (((uint32_t)(*((uint16_t *)FLASHSIZE_BASE)) & (0x0FFFU)) << 10U)))
+
+/*!< OTP Area */
+#define OTP_BASE              (0x0BFA0000UL)
+#define OTP_SIZE              (0x200U)
+
+/*!< Bootloader Area */
+#define BL_ID_ADDR            (0x0BF97FFEUL)          /*!< Bootloader ID address */
+#define BL_ID                 (*(uint8_t*)BL_ID_ADDR) /*!< Bootloader ID */
+
+/*!< Root Secure Service Library */
+/************ RSSLIB SAU system Flash region definition constants *************/
+#define RSSLIB_SYS_FLASH_NS_PFUNC_START   (0x0BF97F40UL)
+#define RSSLIB_SYS_FLASH_NS_PFUNC_END     (0x0BF97FFFUL)
+
+/************ RSSLIB function return constants ********************************/
+#define RSSLIB_ERROR   (0xF5F5F5F5UL)
+#define RSSLIB_SUCCESS (0xEAEAEAEAUL)
+
+/*!< RSSLIB  pointer function structure address definition */
+#define RSSLIB_PFUNC_BASE (0x0BF97F40UL)
+#define RSSLIB_PFUNC      ((RSSLIB_pFunc_TypeDef *)RSSLIB_PFUNC_BASE)
+
+/*!< HDP Area constant definition */
+#define RSSLIB_HDP_AREA_Pos  (0U)
+#define RSSLIB_HDP_AREA_Msk  (0x3UL << RSSLIB_HDP_AREA_Pos )
+#define RSSLIB_HDP_AREA1_Pos (0U)
+#define RSSLIB_HDP_AREA1_Msk (0x1UL << RSSLIB_HDP_AREA1_Pos )
+#define RSSLIB_HDP_AREA2_Pos (1U)
+#define RSSLIB_HDP_AREA2_Msk (0x1UL << RSSLIB_HDP_AREA2_Pos )
+
+/**
+  * @brief  Prototype of RSSLIB Close and exit HDP Function
+  * @detail This function close the requested hdp area passed in input
+  *         parameter and jump to the reset handler present within the
+  *         Vector table. The function does not return on successful execution.
+  * @param  HdpArea notifies which hdp area to close, can be a combination of
+  *         hdpa area 1 and hdp area 2
+  * @param  pointer on the vector table containing the reset handler the function
+  *         jumps to.
+  * @retval RSSLIB_RSS_ERROR on error on input parameter, otherwise does not return.
+  */
+typedef uint32_t ( *RSSLIB_S_CloseExitHDP_TypeDef)( uint32_t HdpArea, uint32_t VectorTableAddr );
+
+
+/**
+  * @brief RSSLib non-secure callable function pointer structure
+  */
+typedef struct
+{
+  __IM uint32_t Reserved[8];
+}NSC_pFuncTypeDef;
+
+/**
+  * @brief RSSLib secure callable function pointer structure
+  */
+typedef struct
+{
+  __IM RSSLIB_S_CloseExitHDP_TypeDef CloseExitHDP_BL90;        /*!< RSSLIB Bootloader ID90 Close and exit HDP  Address offset: 0x20 */
+  __IM uint32_t Reserved2;
+  __IM RSSLIB_S_CloseExitHDP_TypeDef CloseExitHDP_BL91;        /*!< RSSLIB Bootloader ID91 Close and exit HDP  Address offset: 0x28 */
+}S_pFuncTypeDef;
+
+/**
+  * @brief RSSLib function pointer structure
+  */
+typedef struct
+{
+  NSC_pFuncTypeDef NSC;
+  S_pFuncTypeDef S;
+}RSSLIB_pFunc_TypeDef;
 
 /** @} */ /* End of group STM32L5xx_Peripheral_peripheralAddr */
 
@@ -4833,21 +4908,21 @@ typedef struct
 #define DBGMCU_APB1FZR2_DBG_LPTIM3_STOP        DBGMCU_APB1FZR2_DBG_LPTIM3_STOP_Msk
 
 /********************  Bit definition for DBGMCU_APB2FZ register  ************/
-#define DBGMCU_APB2FZ_DBG_TIM1_STOP_Pos        (11U)
-#define DBGMCU_APB2FZ_DBG_TIM1_STOP_Msk        (0x1UL << DBGMCU_APB2FZ_DBG_TIM1_STOP_Pos)/*!< 0x00000800 */
-#define DBGMCU_APB2FZ_DBG_TIM1_STOP            DBGMCU_APB2FZ_DBG_TIM1_STOP_Msk
-#define DBGMCU_APB2FZ_DBG_TIM8_STOP_Pos        (13U)
-#define DBGMCU_APB2FZ_DBG_TIM8_STOP_Msk        (0x1UL << DBGMCU_APB2FZ_DBG_TIM8_STOP_Pos)/*!< 0x00002000 */
-#define DBGMCU_APB2FZ_DBG_TIM8_STOP            DBGMCU_APB2FZ_DBG_TIM8_STOP_Msk
-#define DBGMCU_APB2FZ_DBG_TIM15_STOP_Pos       (16U)
-#define DBGMCU_APB2FZ_DBG_TIM15_STOP_Msk       (0x1UL << DBGMCU_APB2FZ_DBG_TIM15_STOP_Pos)/*!< 0x00010000 */
-#define DBGMCU_APB2FZ_DBG_TIM15_STOP           DBGMCU_APB2FZ_DBG_TIM15_STOP_Msk
-#define DBGMCU_APB2FZ_DBG_TIM16_STOP_Pos       (17U)
-#define DBGMCU_APB2FZ_DBG_TIM16_STOP_Msk       (0x1UL << DBGMCU_APB2FZ_DBG_TIM16_STOP_Pos)/*!< 0x00020000 */
-#define DBGMCU_APB2FZ_DBG_TIM16_STOP           DBGMCU_APB2FZ_DBG_TIM16_STOP_Msk
-#define DBGMCU_APB2FZ_DBG_TIM17_STOP_Pos       (18U)
-#define DBGMCU_APB2FZ_DBG_TIM17_STOP_Msk       (0x1UL << DBGMCU_APB2FZ_DBG_TIM17_STOP_Pos)/*!< 0x00040000 */
-#define DBGMCU_APB2FZ_DBG_TIM17_STOP           DBGMCU_APB2FZ_DBG_TIM17_STOP_Msk
+#define DBGMCU_APB2FZR_DBG_TIM1_STOP_Pos       (11U)
+#define DBGMCU_APB2FZR_DBG_TIM1_STOP_Msk       (0x1UL << DBGMCU_APB2FZR_DBG_TIM1_STOP_Pos)/*!< 0x00000800 */
+#define DBGMCU_APB2FZR_DBG_TIM1_STOP           DBGMCU_APB2FZR_DBG_TIM1_STOP_Msk
+#define DBGMCU_APB2FZR_DBG_TIM8_STOP_Pos       (13U)
+#define DBGMCU_APB2FZR_DBG_TIM8_STOP_Msk       (0x1UL << DBGMCU_APB2FZR_DBG_TIM8_STOP_Pos)/*!< 0x00002000 */
+#define DBGMCU_APB2FZR_DBG_TIM8_STOP           DBGMCU_APB2FZR_DBG_TIM8_STOP_Msk
+#define DBGMCU_APB2FZR_DBG_TIM15_STOP_Pos      (16U)
+#define DBGMCU_APB2FZR_DBG_TIM15_STOP_Msk      (0x1UL << DBGMCU_APB2FZR_DBG_TIM15_STOP_Pos)/*!< 0x00010000 */
+#define DBGMCU_APB2FZR_DBG_TIM15_STOP          DBGMCU_APB2FZR_DBG_TIM15_STOP_Msk
+#define DBGMCU_APB2FZR_DBG_TIM16_STOP_Pos      (17U)
+#define DBGMCU_APB2FZR_DBG_TIM16_STOP_Msk      (0x1UL << DBGMCU_APB2FZR_DBG_TIM16_STOP_Pos)/*!< 0x00020000 */
+#define DBGMCU_APB2FZR_DBG_TIM16_STOP          DBGMCU_APB2FZR_DBG_TIM16_STOP_Msk
+#define DBGMCU_APB2FZR_DBG_TIM17_STOP_Pos      (18U)
+#define DBGMCU_APB2FZR_DBG_TIM17_STOP_Msk      (0x1UL << DBGMCU_APB2FZR_DBG_TIM17_STOP_Pos)/*!< 0x00040000 */
+#define DBGMCU_APB2FZR_DBG_TIM17_STOP          DBGMCU_APB2FZR_DBG_TIM17_STOP_Msk
 
 /******************************************************************************/
 /*                                                                            */
@@ -7588,9 +7663,6 @@ typedef struct
 #define FLASH_SECSR_SECPGSERR_Pos         (7U)
 #define FLASH_SECSR_SECPGSERR_Msk         (0x1UL << FLASH_SECSR_SECPGSERR_Pos) /*!< 0x00000080 */
 #define FLASH_SECSR_SECPGSERR             FLASH_SECSR_SECPGSERR_Msk
-#define FLASH_SECSR_SECRDERR_Pos          (14U)
-#define FLASH_SECSR_SECRDERR_Msk          (0x1UL << FLASH_SECSR_SECRDERR_Pos)  /*!< 0x00004000 */
-#define FLASH_SECSR_SECRDERR              FLASH_SECSR_SECRDERR_Msk
 #define FLASH_SECSR_SECBSY_Pos            (16U)
 #define FLASH_SECSR_SECBSY_Msk            (0x1UL << FLASH_SECSR_SECBSY_Pos)    /*!< 0x00010000 */
 #define FLASH_SECSR_SECBSY                FLASH_SECSR_SECBSY_Msk
@@ -7664,9 +7736,6 @@ typedef struct
 #define FLASH_SECCR_SECERRIE_Pos          (25U)
 #define FLASH_SECCR_SECERRIE_Msk          (0x1UL << FLASH_SECCR_SECERRIE_Pos)  /*!< 0x02000000 */
 #define FLASH_SECCR_SECERRIE              FLASH_SECCR_SECERRIE_Msk
-#define FLASH_SECCR_SECRDERRIE_Pos        (26U)
-#define FLASH_SECCR_SECRDERRIE_Msk        (0x1UL << FLASH_SECCR_SECRDERRIE_Pos)/*!< 0x04000000 */
-#define FLASH_SECCR_SECRDERRIE            FLASH_SECCR_SECRDERRIE_Msk
 #define FLASH_SECCR_SECINV_Pos            (29U)
 #define FLASH_SECCR_SECINV_Msk            (0x1UL << FLASH_SECCR_SECINV_Pos)    /*!< 0x20000000 */
 #define FLASH_SECCR_SECINV                FLASH_SECCR_SECINV_Msk
@@ -7788,12 +7857,6 @@ typedef struct
 #define FLASH_SECWM1R1_SECWM1_PEND        FLASH_SECWM1R1_SECWM1_PEND_Msk
 
 /*****************  Bits definition for FLASH_SECWM1R2 register  **************/
-#define FLASH_SECWM1R2_PCROP1_PSTRT_Pos   (0U)
-#define FLASH_SECWM1R2_PCROP1_PSTRT_Msk   (0x7FUL << FLASH_SECWM1R2_PCROP1_PSTRT_Pos)/*!< 0x0000007F */
-#define FLASH_SECWM1R2_PCROP1_PSTRT       FLASH_SECWM1R2_PCROP1_PSTRT_Msk
-#define FLASH_SECWM1R2_PCROP1EN_Pos       (15U)
-#define FLASH_SECWM1R2_PCROP1EN_Msk       (0x1UL << FLASH_SECWM1R2_PCROP1EN_Pos)     /*!< 0x00008000 */
-#define FLASH_SECWM1R2_PCROP1EN           FLASH_SECWM1R2_PCROP1EN_Msk
 #define FLASH_SECWM1R2_HDP1_PEND_Pos      (16U)
 #define FLASH_SECWM1R2_HDP1_PEND_Msk      (0x7FUL << FLASH_SECWM1R2_HDP1_PEND_Pos)   /*!< 0x007F0000 */
 #define FLASH_SECWM1R2_HDP1_PEND          FLASH_SECWM1R2_HDP1_PEND_Msk
@@ -7826,12 +7889,6 @@ typedef struct
 #define FLASH_SECWM2R1_SECWM2_PEND        FLASH_SECWM2R1_SECWM2_PEND_Msk
 
 /*****************  Bits definition for FLASH_SECWM2R2 register  **************/
-#define FLASH_SECWM2R2_PCROP2_PSTRT_Pos   (0U)
-#define FLASH_SECWM2R2_PCROP2_PSTRT_Msk   (0x7FUL << FLASH_SECWM2R2_PCROP2_PSTRT_Pos)/*!< 0x0000007F */
-#define FLASH_SECWM2R2_PCROP2_PSTRT       FLASH_SECWM2R2_PCROP2_PSTRT_Msk
-#define FLASH_SECWM2R2_PCROP2EN_Pos       (15U)
-#define FLASH_SECWM2R2_PCROP2EN_Msk       (0x1UL << FLASH_SECWM2R2_PCROP2EN_Pos)     /*!< 0x00008000 */
-#define FLASH_SECWM2R2_PCROP2EN           FLASH_SECWM2R2_PCROP2EN_Msk
 #define FLASH_SECWM2R2_HDP2_PEND_Pos      (16U)
 #define FLASH_SECWM2R2_HDP2_PEND_Msk      (0x7FUL << FLASH_SECWM2R2_HDP2_PEND_Pos)   /*!< 0x007F0000 */
 #define FLASH_SECWM2R2_HDP2_PEND          FLASH_SECWM2R2_HDP2_PEND_Msk
@@ -17042,12 +17099,10 @@ typedef struct
 
 /******************  Bit definition for SYSCFG_RSSCMDR register  **************/
 #define SYSCFG_RSSCMDR_RSSCMD_Pos       (0U)
-#if defined(USE_CUT2_0)
 #define SYSCFG_RSSCMDR_RSSCMD_Msk       (0xFFFFUL << SYSCFG_RSSCMDR_RSSCMD_Pos) /*!< 0x0000FFFF */
-#else
-#define SYSCFG_RSSCMDR_RSSCMD_Msk       (0xFFUL << SYSCFG_RSSCMDR_RSSCMD_Pos)  /*!< 0x000000FF */
-#endif
 #define SYSCFG_RSSCMDR_RSSCMD           SYSCFG_RSSCMDR_RSSCMD_Msk              /*!< RSS commands */
+
+#define SYSCFG_RSSCMDR_RSSCMD_BOOTLOADER ((uint16_t)0x01C0U)
 
 /*****************************************************************************/
 /*                                                                           */
@@ -20479,9 +20534,6 @@ typedef struct
                                                        ((INSTANCE) == TIM16_S) || \
                                                        ((INSTANCE) == TIM17_S))
 
-/****************** TIM Instances : supporting synchronization ****************/
-#define IS_TIM_SYNCHRO_INSTANCE(INSTANCE)  IS_TIM_MASTER_INSTANCE(INSTANCE)
-
 /****************** TIM Instances : supporting ADC triggering through TRGO2 ***/
 #define IS_TIM_TRGO2_INSTANCE(INSTANCE)    (((INSTANCE) == TIM1_S)  || \
                                             ((INSTANCE) == TIM8_S))
@@ -21073,9 +21125,6 @@ typedef struct
                                                        ((INSTANCE) == TIM15_NS) || \
                                                        ((INSTANCE) == TIM16_NS) || \
                                                        ((INSTANCE) == TIM17_NS))
-
-/****************** TIM Instances : supporting synchronization ****************/
-#define IS_TIM_SYNCHRO_INSTANCE(INSTANCE)  IS_TIM_MASTER_INSTANCE(INSTANCE)
 
 /****************** TIM Instances : supporting ADC triggering through TRGO2 ***/
 #define IS_TIM_TRGO2_INSTANCE(INSTANCE)    (((INSTANCE) == TIM1_NS)  || \

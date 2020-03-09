@@ -349,11 +349,8 @@ HAL_StatusTypeDef HAL_OSPI_Init (OSPI_HandleTypeDef *hospi)
 #endif
 
       /* Configure the default timeout for the OSPI memory access */
-      status = HAL_OSPI_SetTimeout(hospi, HAL_OSPI_TIMEOUT_DEFAULT_VALUE);
-    }
+      (void)HAL_OSPI_SetTimeout(hospi, HAL_OSPI_TIMEOUT_DEFAULT_VALUE);
 
-    if (status == HAL_OK)
-    {
       /* Configure memory type, device size, chip select high time, delay block bypass, free running clock, clock mode */
       MODIFY_REG(hospi->Instance->DCR1,
                  (OCTOSPI_DCR1_MTYP | OCTOSPI_DCR1_DEVSIZE | OCTOSPI_DCR1_CSHT | OCTOSPI_DCR1_DLYBYP |
@@ -379,33 +376,33 @@ HAL_StatusTypeDef HAL_OSPI_Init (OSPI_HandleTypeDef *hospi)
 
       if (status == HAL_OK)
       {
-         /* Configure clock prescaler */
-         MODIFY_REG(hospi->Instance->DCR2, OCTOSPI_DCR2_PRESCALER, ((hospi->Init.ClockPrescaler - 1U) << OCTOSPI_DCR2_PRESCALER_Pos));
+        /* Configure clock prescaler */
+        MODIFY_REG(hospi->Instance->DCR2, OCTOSPI_DCR2_PRESCALER, ((hospi->Init.ClockPrescaler - 1U) << OCTOSPI_DCR2_PRESCALER_Pos));
 
-         /* Configure Dual Quad mode */
-         MODIFY_REG(hospi->Instance->CR, OCTOSPI_CR_DQM, hospi->Init.DualQuad);
+        /* Configure Dual Quad mode */
+        MODIFY_REG(hospi->Instance->CR, OCTOSPI_CR_DQM, hospi->Init.DualQuad);
 
-         /* Configure sample shifting and delay hold quarter cycle */
-         MODIFY_REG(hospi->Instance->TCR, (OCTOSPI_TCR_SSHIFT | OCTOSPI_TCR_DHQC), (hospi->Init.SampleShifting | hospi->Init.DelayHoldQuarterCycle));
+        /* Configure sample shifting and delay hold quarter cycle */
+        MODIFY_REG(hospi->Instance->TCR, (OCTOSPI_TCR_SSHIFT | OCTOSPI_TCR_DHQC), (hospi->Init.SampleShifting | hospi->Init.DelayHoldQuarterCycle));
 
-         /* Enable OctoSPI */
-         __HAL_OSPI_ENABLE(hospi);
-         
-         /* Enable free running clock if needed : must be done after OSPI enable */
-         if (hospi->Init.FreeRunningClock == HAL_OSPI_FREERUNCLK_ENABLE)
-         {
-           SET_BIT(hospi->Instance->DCR1, OCTOSPI_DCR1_FRCK);
-         }
+        /* Enable OctoSPI */
+        __HAL_OSPI_ENABLE(hospi);
 
-         /* Initialize the OSPI state */
-         if (hospi->Init.MemoryType == HAL_OSPI_MEMTYPE_HYPERBUS)
-         {
-            hospi->State = HAL_OSPI_STATE_HYPERBUS_INIT;
-         }
-         else
-         {
-            hospi->State = HAL_OSPI_STATE_READY;
-         }
+        /* Enable free running clock if needed : must be done after OSPI enable */
+        if (hospi->Init.FreeRunningClock == HAL_OSPI_FREERUNCLK_ENABLE)
+        {
+          SET_BIT(hospi->Instance->DCR1, OCTOSPI_DCR1_FRCK);
+        }
+
+        /* Initialize the OSPI state */
+        if (hospi->Init.MemoryType == HAL_OSPI_MEMTYPE_HYPERBUS)
+        {
+          hospi->State = HAL_OSPI_STATE_HYPERBUS_INIT;
+        }
+        else
+        {
+          hospi->State = HAL_OSPI_STATE_READY;
+        }
       }
     }
   }

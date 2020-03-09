@@ -958,8 +958,8 @@ typedef struct
   * @note Only available when system implements security (TZEN=1)
   * @{
   */
-#define LL_RCC_ALL_SEC                     RCC_SECURE_MASK         /*!< Security on all RCC ressources          */
-#define LL_RCC_ALL_NSEC                    0U                      /*!< No security on RCC ressources (default) */
+#define LL_RCC_ALL_SEC                     RCC_SECURE_MASK         /*!< Security on all RCC resources          */
+#define LL_RCC_ALL_NSEC                    0U                      /*!< No security on RCC resources (default) */
 
 #define LL_RCC_HSI_SEC                     RCC_SECCFGR_HSISEC      /*!< HSI clock configuration secure-only access */
 #define LL_RCC_HSI_NSEC                    0U                      /*!< HSI clock configuration secure/non-secure access */
@@ -1415,8 +1415,8 @@ typedef struct
   * @retval MSI clock frequency (in Hz)
   */
 #define __LL_RCC_CALC_MSI_FREQ(__MSISEL__, __MSIRANGE__)   (((__MSISEL__) == LL_RCC_MSIRANGESEL_STANDBY) ? \
-                           (MSIRangeTable[((__MSIRANGE__) >> 8U)]) : \
-                           (MSIRangeTable[((__MSIRANGE__) >> 4U)]))
+                           MSIRangeTable[((__MSIRANGE__) >> RCC_CSR_MSISRANGE_Pos) & 0x0FU] : \
+                           MSIRangeTable[((__MSIRANGE__) >> RCC_CR_MSIRANGE_Pos) & 0x0FU])
 
 /**
   * @}
@@ -3449,8 +3449,8 @@ __STATIC_INLINE uint32_t LL_RCC_PLLSAI1_IsReady(void)
   */
 __STATIC_INLINE void LL_RCC_PLLSAI1_ConfigDomain_48M(uint32_t Source, uint32_t PLLM, uint32_t PLLN, uint32_t PLLQ)
 {
-  MODIFY_REG(RCC->PLLSAI1CFGR, RCC_PLLSAI1CFGR_PLLSAI1SRC | RCC_PLLSAI1CFGR_PLLSAI1M | \
-                               RCC_PLLSAI1CFGR_PLLSAI1N | RCC_PLLSAI1CFGR_PLLSAI1Q,
+  MODIFY_REG(RCC->PLLSAI1CFGR,
+             RCC_PLLSAI1CFGR_PLLSAI1SRC | RCC_PLLSAI1CFGR_PLLSAI1M | RCC_PLLSAI1CFGR_PLLSAI1N | RCC_PLLSAI1CFGR_PLLSAI1Q,
              Source | PLLM | (PLLN << RCC_PLLSAI1CFGR_PLLSAI1N_Pos) | PLLQ);
 }
 
@@ -3520,8 +3520,8 @@ __STATIC_INLINE void LL_RCC_PLLSAI1_ConfigDomain_48M(uint32_t Source, uint32_t P
   */
 __STATIC_INLINE void LL_RCC_PLLSAI1_ConfigDomain_SAI(uint32_t Source, uint32_t PLLM, uint32_t PLLN, uint32_t PLLP)
 {
-  MODIFY_REG(RCC->PLLSAI1CFGR, RCC_PLLSAI1CFGR_PLLSAI1SRC | RCC_PLLSAI1CFGR_PLLSAI1M | \
-                               RCC_PLLSAI1CFGR_PLLSAI1N | RCC_PLLSAI1CFGR_PLLSAI1PDIV,
+  MODIFY_REG(RCC->PLLSAI1CFGR,
+             RCC_PLLSAI1CFGR_PLLSAI1SRC | RCC_PLLSAI1CFGR_PLLSAI1M | RCC_PLLSAI1CFGR_PLLSAI1N | RCC_PLLSAI1CFGR_PLLSAI1PDIV,
              Source | PLLM | (PLLN << RCC_PLLSAI1CFGR_PLLSAI1N_Pos) | PLLP);
 }
 
@@ -3565,8 +3565,8 @@ __STATIC_INLINE void LL_RCC_PLLSAI1_ConfigDomain_SAI(uint32_t Source, uint32_t P
   */
 __STATIC_INLINE void LL_RCC_PLLSAI1_ConfigDomain_ADC(uint32_t Source, uint32_t PLLM, uint32_t PLLN, uint32_t PLLR)
 {
-  MODIFY_REG(RCC->PLLSAI1CFGR, RCC_PLLSAI1CFGR_PLLSAI1SRC | RCC_PLLSAI1CFGR_PLLSAI1M | \
-                               RCC_PLLSAI1CFGR_PLLSAI1N | RCC_PLLSAI1CFGR_PLLSAI1R,
+  MODIFY_REG(RCC->PLLSAI1CFGR,
+             RCC_PLLSAI1CFGR_PLLSAI1SRC | RCC_PLLSAI1CFGR_PLLSAI1M | RCC_PLLSAI1CFGR_PLLSAI1N | RCC_PLLSAI1CFGR_PLLSAI1R,
              Source | PLLM | (PLLN << RCC_PLLSAI1CFGR_PLLSAI1N_Pos) | PLLR);
 }
 
@@ -3876,8 +3876,8 @@ __STATIC_INLINE uint32_t LL_RCC_PLLSAI2_IsReady(void)
   */
 __STATIC_INLINE void LL_RCC_PLLSAI2_ConfigDomain_SAI(uint32_t Source, uint32_t PLLM, uint32_t PLLN, uint32_t PLLP)
 {
-  MODIFY_REG(RCC->PLLSAI2CFGR, RCC_PLLSAI2CFGR_PLLSAI2SRC | RCC_PLLSAI2CFGR_PLLSAI2M | \
-                               RCC_PLLSAI2CFGR_PLLSAI2N | RCC_PLLSAI2CFGR_PLLSAI2PDIV,
+  MODIFY_REG(RCC->PLLSAI2CFGR,
+             RCC_PLLSAI2CFGR_PLLSAI2SRC | RCC_PLLSAI2CFGR_PLLSAI2M | RCC_PLLSAI2CFGR_PLLSAI2N | RCC_PLLSAI2CFGR_PLLSAI2PDIV,
              Source | PLLM | (PLLN << RCC_PLLSAI2CFGR_PLLSAI2N_Pos) | PLLP);
 }
 

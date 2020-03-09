@@ -353,7 +353,7 @@ HAL_StatusTypeDef HAL_GTZC_TZSC_GetConfigPeriphAttributes(uint32_t PeriphId,
     }
 
     reg_value = READ_REG(GTZC_TZSC->SECCFGR2);
-    for (i = 32U; i < GTZC_TZSC_PERIPH_NUMBER; i++)
+    for (/*i = 32U*/; i < GTZC_TZSC_PERIPH_NUMBER; i++)
     {
       if(((reg_value & (1UL << (i - 32U))) >> (i - 32U)) != 0U)
       {
@@ -382,7 +382,7 @@ HAL_StatusTypeDef HAL_GTZC_TZSC_GetConfigPeriphAttributes(uint32_t PeriphId,
     }
 
     reg_value = READ_REG(GTZC_TZSC->PRIVCFGR2);
-    for (i = 32U; i < GTZC_TZSC_PERIPH_NUMBER; i++)
+    for (/*i = 32U*/; i < GTZC_TZSC_PERIPH_NUMBER; i++)
     {
       if(((reg_value & (1UL << (i - 32U))) >> (i - 32U)) != 0U)
       {
@@ -1011,9 +1011,9 @@ HAL_StatusTypeDef HAL_GTZC_MPCBB_GetConfigMemAttributes(uint32_t MemAddress,
   * @param  MemAddress MPCBB identifier, and start super-block to configure
   *         (must be 8KBytes aligned).
   * @param  NbSuperBlocks Number of super-blocks to configure.
-  * @param  pLockAttributes pointer to an array (containing "NbBlocks" elements),
+  * @param  pLockAttributes pointer to an array (containing "NbSuperBlocks" elements),
   *         with for each element:
-  *         value 0 super-blocks are unlocked, value 1 super-blocks are locked
+  *         value 0 super-block is unlocked, value 1 super-block is locked
   *         (corresponds to GTZC_MCPBB_SUPERBLOCK_UNLOCKED and
   *         GTZC_MCPBB_SUPERBLOCK_LOCKED values).
   * @retval HAL status.
@@ -1096,7 +1096,7 @@ HAL_StatusTypeDef HAL_GTZC_MPCBB_LockConfig(uint32_t MemAddress,
   * @param  NbSuperBlocks Number of super-blocks to get configuration.
   * @param  pLockAttributes pointer to an array (size is NbSuperBlocks),
   *         with for each element:
-  *         value 0 super-blocks are unlocked, value 1 super-blocks are locked
+  *         value 0 super-block is unlocked, value 1 super-block is locked
   *         (corresponds to GTZC_MCPBB_SUPERBLOCK_UNLOCKED and
   *         GTZC_MCPBB_SUPERBLOCK_LOCKED values).
   * @retval HAL status.
@@ -1334,13 +1334,13 @@ HAL_StatusTypeDef HAL_GTZC_TZIC_GetFlag(uint32_t PeriphId, uint32_t *pFlag)
     }
 
     reg_value = READ_REG(GTZC_TZIC->SR2);
-    for (i = 32U; i < 64U; i++)
+    for (/*i = 32U*/; i < 64U; i++)
     {
       pFlag[i] = (reg_value & (1UL << (i - 32U))) >> (i - 32U);
     }
 
     reg_value = READ_REG(GTZC_TZIC->SR3);
-    for (i = 64U; i < GTZC_TZIC_PERIPH_NUMBER; i++)
+    for (/*i = 64U*/; i < GTZC_TZIC_PERIPH_NUMBER; i++)
     {
       pFlag[i] = (reg_value & (1UL << (i - 64U))) >> (i - 64U);
     }
@@ -1436,7 +1436,7 @@ void HAL_GTZC_IRQHandler(void)
     position = 0U;
     while ((flag >> position) != 0U)
     {
-      if ((flag & (1U << position)) != 0U)
+      if ((flag & (1UL << position)) != 0U)
       {
         HAL_GTZC_TZIC_Callback(GTZC_PERIPH_REG1 | position);
       }
@@ -1460,7 +1460,7 @@ void HAL_GTZC_IRQHandler(void)
     position = 0U;
     while ((flag >> position) != 0U)
     {
-      if ((flag & (1U << position)) != 0U)
+      if ((flag & (1UL << position)) != 0U)
       {
         HAL_GTZC_TZIC_Callback(GTZC_PERIPH_REG2 | position);
       }
@@ -1484,7 +1484,7 @@ void HAL_GTZC_IRQHandler(void)
     position = 0U;
     while ((flag >> position) != 0U)
     {
-      if ((flag & (1U << position)) != 0U)
+      if ((flag & (1UL << position)) != 0U)
       {
         HAL_GTZC_TZIC_Callback(GTZC_PERIPH_REG3 | position);
       }

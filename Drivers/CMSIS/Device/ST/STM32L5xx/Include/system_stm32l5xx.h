@@ -55,7 +55,7 @@ extern uint32_t SystemCoreClock;     /*!< System Clock Frequency (Core Clock)  *
 
 extern const uint8_t  AHBPrescTable[16];    /*!< AHB prescalers table values */
 extern const uint8_t  APBPrescTable[8];     /*!< APB prescalers table values */
-extern const uint32_t MSIRangeTable[12];    /*!< MSI ranges table values     */
+extern const uint32_t MSIRangeTable[16];    /*!< MSI ranges table values     */
 
 /**
   * @}
@@ -79,6 +79,15 @@ extern void SystemInit (void);
    Updates the SystemCoreClock with current core Clock retrieved from cpu registers.
  */
 extern void SystemCoreClockUpdate (void);
+
+
+/**
+  \brief  Update SystemCoreClock variable from secure application and return its value
+          when security is implemented in the system (Non-secure callable function).
+
+   Returns the SystemCoreClock value with current core Clock retrieved from cpu registers.
+ */
+extern uint32_t SECURE_SystemCoreClockUpdate(void);
 
 /**
   * @}

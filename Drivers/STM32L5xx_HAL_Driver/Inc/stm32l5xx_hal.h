@@ -160,8 +160,8 @@
 /** @defgroup SYSCFG_VREFBUF_VoltageScale VREFBUF Voltage Scale
   * @{
   */
-#define SYSCFG_VREFBUF_VOLTAGE_SCALE0  ((uint32_t)0x00000000) /*!< Voltage reference scale 0 (VREF_OUT1) */
-#define SYSCFG_VREFBUF_VOLTAGE_SCALE1  VREFBUF_CSR_VRS        /*!< Voltage reference scale 1 (VREF_OUT2) */
+#define SYSCFG_VREFBUF_VOLTAGE_SCALE0  0U              /*!< Voltage reference scale 0 (VREF_OUT1) */
+#define SYSCFG_VREFBUF_VOLTAGE_SCALE1  VREFBUF_CSR_VRS /*!< Voltage reference scale 1 (VREF_OUT2) */
 
 /**
   * @}
@@ -170,8 +170,8 @@
 /** @defgroup SYSCFG_VREFBUF_HighImpedance VREFBUF High Impedance
   * @{
   */
-#define SYSCFG_VREFBUF_HIGH_IMPEDANCE_DISABLE  ((uint32_t)0x00000000) /*!< VREF_plus pin is internally connected to Voltage reference buffer output */
-#define SYSCFG_VREFBUF_HIGH_IMPEDANCE_ENABLE   VREFBUF_CSR_HIZ        /*!< VREF_plus pin is high impedance */
+#define SYSCFG_VREFBUF_HIGH_IMPEDANCE_DISABLE  0U              /*!< VREF_plus pin is internally connected to Voltage reference buffer output */
+#define SYSCFG_VREFBUF_HIGH_IMPEDANCE_ENABLE   VREFBUF_CSR_HIZ /*!< VREF_plus pin is high impedance */
 
 /**
   * @}
@@ -345,29 +345,29 @@
 #define __HAL_DBGMCU_UNFREEZE_LPTIM3()       CLEAR_BIT(DBGMCU->APB1FZR2, DBGMCU_APB1FZR2_DBG_LPTIM3_STOP)
 #endif
 
-#if defined(DBGMCU_APB2FZ_DBG_TIM1_STOP)
-#define __HAL_DBGMCU_FREEZE_TIM1()           SET_BIT(DBGMCU->APB2FZ, DBGMCU_APB2FZ_DBG_TIM1_STOP)
-#define __HAL_DBGMCU_UNFREEZE_TIM1()         CLEAR_BIT(DBGMCU->APB2FZ, DBGMCU_APB2FZ_DBG_TIM1_STOP)
+#if defined(DBGMCU_APB2FZR_DBG_TIM1_STOP)
+#define __HAL_DBGMCU_FREEZE_TIM1()           SET_BIT(DBGMCU->APB2FZR, DBGMCU_APB2FZR_DBG_TIM1_STOP)
+#define __HAL_DBGMCU_UNFREEZE_TIM1()         CLEAR_BIT(DBGMCU->APB2FZR, DBGMCU_APB2FZR_DBG_TIM1_STOP)
 #endif
 
-#if defined(DBGMCU_APB2FZ_DBG_TIM8_STOP)
-#define __HAL_DBGMCU_FREEZE_TIM8()           SET_BIT(DBGMCU->APB2FZ, DBGMCU_APB2FZ_DBG_TIM8_STOP)
-#define __HAL_DBGMCU_UNFREEZE_TIM8()         CLEAR_BIT(DBGMCU->APB2FZ, DBGMCU_APB2FZ_DBG_TIM8_STOP)
+#if defined(DBGMCU_APB2FZR_DBG_TIM8_STOP)
+#define __HAL_DBGMCU_FREEZE_TIM8()           SET_BIT(DBGMCU->APB2FZR, DBGMCU_APB2FZR_DBG_TIM8_STOP)
+#define __HAL_DBGMCU_UNFREEZE_TIM8()         CLEAR_BIT(DBGMCU->APB2FZR, DBGMCU_APB2FZR_DBG_TIM8_STOP)
 #endif
 
-#if defined(DBGMCU_APB2FZ_DBG_TIM15_STOP)
-#define __HAL_DBGMCU_FREEZE_TIM15()          SET_BIT(DBGMCU->APB2FZ, DBGMCU_APB2FZ_DBG_TIM15_STOP)
-#define __HAL_DBGMCU_UNFREEZE_TIM15()        CLEAR_BIT(DBGMCU->APB2FZ, DBGMCU_APB2FZ_DBG_TIM15_STOP)
+#if defined(DBGMCU_APB2FZR_DBG_TIM15_STOP)
+#define __HAL_DBGMCU_FREEZE_TIM15()          SET_BIT(DBGMCU->APB2FZR, DBGMCU_APB2FZR_DBG_TIM15_STOP)
+#define __HAL_DBGMCU_UNFREEZE_TIM15()        CLEAR_BIT(DBGMCU->APB2FZR, DBGMCU_APB2FZR_DBG_TIM15_STOP)
 #endif
 
-#if defined(DBGMCU_APB2FZ_DBG_TIM16_STOP)
-#define __HAL_DBGMCU_FREEZE_TIM16()          SET_BIT(DBGMCU->APB2FZ, DBGMCU_APB2FZ_DBG_TIM16_STOP)
-#define __HAL_DBGMCU_UNFREEZE_TIM16()        CLEAR_BIT(DBGMCU->APB2FZ, DBGMCU_APB2FZ_DBG_TIM16_STOP)
+#if defined(DBGMCU_APB2FZR_DBG_TIM16_STOP)
+#define __HAL_DBGMCU_FREEZE_TIM16()          SET_BIT(DBGMCU->APB2FZR, DBGMCU_APB2FZR_DBG_TIM16_STOP)
+#define __HAL_DBGMCU_UNFREEZE_TIM16()        CLEAR_BIT(DBGMCU->APB2FZR, DBGMCU_APB2FZR_DBG_TIM16_STOP)
 #endif
 
-#if defined(DBGMCU_APB2FZ_DBG_TIM17_STOP)
-#define __HAL_DBGMCU_FREEZE_TIM17()          SET_BIT(DBGMCU->APB2FZ, DBGMCU_APB2FZ_DBG_TIM17_STOP)
-#define __HAL_DBGMCU_UNFREEZE_TIM17()        CLEAR_BIT(DBGMCU->APB2FZ, DBGMCU_APB2FZ_DBG_TIM17_STOP)
+#if defined(DBGMCU_APB2FZR_DBG_TIM17_STOP)
+#define __HAL_DBGMCU_FREEZE_TIM17()          SET_BIT(DBGMCU->APB2FZR, DBGMCU_APB2FZR_DBG_TIM17_STOP)
+#define __HAL_DBGMCU_UNFREEZE_TIM17()        CLEAR_BIT(DBGMCU->APB2FZR, DBGMCU_APB2FZR_DBG_TIM17_STOP)
 #endif
 
 /**
@@ -448,7 +448,7 @@
   *            @arg @ref SYSCFG_FLAG_SRAM2_BUSY SRAM2 Erase Ongoing
   * @retval The new state of __FLAG__ (TRUE or FALSE).
   */
-#define __HAL_SYSCFG_GET_FLAG(__FLAG__)      ((((((__FLAG__) == SYSCFG_SCSR_SRAM2BSY)? SYSCFG->SCSR : SYSCFG->CFGR2) & (__FLAG__))!= 0) ? 1 : 0)
+#define __HAL_SYSCFG_GET_FLAG(__FLAG__)      ((((((__FLAG__) == SYSCFG_SCSR_SRAM2BSY)? SYSCFG->SCSR : SYSCFG->CFGR2) & (__FLAG__))!= 0U) ? 1U : 0U)
 
 /** @brief  Set the SPF bit to clear the SRAM Parity Error Flag.
   */
@@ -502,7 +502,7 @@
                                             ((__CONFIG__) == SYSCFG_BREAK_SRAM2_PARITY)  || \
                                             ((__CONFIG__) == SYSCFG_BREAK_LOCKUP))
 
-#define IS_SYSCFG_SRAM2WRP_PAGE(__PAGE__)   (((__PAGE__) > 0) && ((__PAGE__) <= 0xFFFFFFFF))
+#define IS_SYSCFG_SRAM2WRP_PAGE(__PAGE__)   (((__PAGE__) > 0U) && ((__PAGE__) <= 0xFFFFFFFFUL))
 
 #define IS_SYSCFG_VREFBUF_VOLTAGE_SCALE(__SCALE__)  (((__SCALE__) == SYSCFG_VREFBUF_VOLTAGE_SCALE0) || \
                                                      ((__SCALE__) == SYSCFG_VREFBUF_VOLTAGE_SCALE1))
@@ -510,7 +510,7 @@
 #define IS_SYSCFG_VREFBUF_HIGH_IMPEDANCE(__VALUE__)  (((__VALUE__) == SYSCFG_VREFBUF_HIGH_IMPEDANCE_DISABLE) || \
                                                       ((__VALUE__) == SYSCFG_VREFBUF_HIGH_IMPEDANCE_ENABLE))
 
-#define IS_SYSCFG_VREFBUF_TRIMMING(__VALUE__)  (((__VALUE__) > 0) && ((__VALUE__) <= VREFBUF_CCR_TRIM))
+#define IS_SYSCFG_VREFBUF_TRIMMING(__VALUE__)  (((__VALUE__) > 0U) && ((__VALUE__) <= VREFBUF_CCR_TRIM))
 
 #define IS_SYSCFG_FASTMODEPLUS(__PIN__) ((((__PIN__) & SYSCFG_FASTMODEPLUS_PB6) == SYSCFG_FASTMODEPLUS_PB6) || \
                                          (((__PIN__) & SYSCFG_FASTMODEPLUS_PB7) == SYSCFG_FASTMODEPLUS_PB7) || \
@@ -635,8 +635,8 @@ void              HAL_SYSCFG_VREFBUF_TrimmingConfig(uint32_t TrimmingValue);
 HAL_StatusTypeDef HAL_SYSCFG_EnableVREFBUF(void);
 void              HAL_SYSCFG_DisableVREFBUF(void);
 
-void              HAL_SYSCFG_EnableIOAnalogSwitchBooster(void);
-void              HAL_SYSCFG_DisableIOAnalogSwitchBooster(void);
+void              HAL_SYSCFG_EnableIOAnalogBooster(void);
+void              HAL_SYSCFG_DisableIOAnalogBooster(void);
 void              HAL_SYSCFG_EnableIOAnalogSwitchVdd(void);
 void              HAL_SYSCFG_DisableIOAnalogSwitchVdd(void);
 

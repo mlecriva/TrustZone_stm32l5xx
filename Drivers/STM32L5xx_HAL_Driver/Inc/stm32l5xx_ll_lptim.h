@@ -710,8 +710,7 @@ __STATIC_INLINE uint32_t LL_LPTIM_GetPrescaler(LPTIM_TypeDef *LPTIMx)
 
 /**
   * @brief  Set LPTIM input 1 source (default GPIO).
-  * @rmtoll OR         OR_0         LL_LPTIM_SetInput1Src
-  * @rmtoll OR         OR_1         LL_LPTIM_SetInput1Src
+  * @rmtoll OR      OR       LL_LPTIM_SetInput1Src
   * @param  LPTIMx Low-Power Timer instance
   * @param  Src This parameter can be one of the following values:
   *         @arg @ref LL_LPTIM_INPUT1_SRC_GPIO
@@ -722,12 +721,12 @@ __STATIC_INLINE uint32_t LL_LPTIM_GetPrescaler(LPTIM_TypeDef *LPTIMx)
   */
 __STATIC_INLINE void LL_LPTIM_SetInput1Src(LPTIM_TypeDef *LPTIMx, uint32_t Src)
 {
-  WRITE_REG(LPTIMx->OR, Src);
+  MODIFY_REG(LPTIMx->OR, LPTIM_OR_OR, Src);
 }
 
 /**
   * @brief  Set LPTIM input 2 source (default GPIO).
-  * @rmtoll OR         OR_0         LL_LPTIM_SetInput2Src
+  * @rmtoll OR      OR       LL_LPTIM_SetInput2Src
   * @param  LPTIMx Low-Power Timer instance
   * @param  Src This parameter can be one of the following values:
   *         @arg @ref LL_LPTIM_INPUT2_SRC_GPIO
@@ -736,7 +735,7 @@ __STATIC_INLINE void LL_LPTIM_SetInput1Src(LPTIM_TypeDef *LPTIMx, uint32_t Src)
   */
 __STATIC_INLINE void LL_LPTIM_SetInput2Src(LPTIM_TypeDef *LPTIMx, uint32_t Src)
 {
-  WRITE_REG(LPTIMx->OR, Src);
+  MODIFY_REG(LPTIMx->OR, LPTIM_OR_OR, Src);
 }
 
 /**
@@ -1094,7 +1093,7 @@ __STATIC_INLINE void LL_LPTIM_ClearFLAG_ARRM(LPTIM_TypeDef *LPTIMx)
 }
 
 /**
-  * @brief  Inform application whether a autoreload match interrupt has occured.
+  * @brief  Inform application whether a autoreload match interrupt has occurred.
   * @rmtoll ISR          ARRM          LL_LPTIM_IsActiveFlag_ARRM
   * @param  LPTIMx Low-Power Timer instance
   * @retval State of bit (1 or 0).

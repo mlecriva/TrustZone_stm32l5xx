@@ -659,6 +659,10 @@ typedef  void (*pLPTIM_CallbackTypeDef)(LPTIM_HandleTypeDef *hlptim);  /*!< poin
   * @{
   */
 
+/** @addtogroup LPTIM_Exported_Functions_Group1
+ *  @brief    Initialization and Configuration functions.
+ * @{
+ */
 /* Initialization/de-initialization functions  ********************************/
 HAL_StatusTypeDef HAL_LPTIM_Init(LPTIM_HandleTypeDef *hlptim);
 HAL_StatusTypeDef HAL_LPTIM_DeInit(LPTIM_HandleTypeDef *hlptim);
@@ -666,7 +670,14 @@ HAL_StatusTypeDef HAL_LPTIM_DeInit(LPTIM_HandleTypeDef *hlptim);
 /* MSP functions  *************************************************************/
 void HAL_LPTIM_MspInit(LPTIM_HandleTypeDef *hlptim);
 void HAL_LPTIM_MspDeInit(LPTIM_HandleTypeDef *hlptim);
+/**
+  * @}
+  */
 
+/** @addtogroup LPTIM_Exported_Functions_Group2
+ *  @brief   Start-Stop operation functions.
+ * @{
+ */
 /* Start/Stop operation functions  *********************************************/
 /* ################################# PWM Mode ################################*/
 /* Blocking mode: Polling */
@@ -715,12 +726,26 @@ HAL_StatusTypeDef HAL_LPTIM_Counter_Stop(LPTIM_HandleTypeDef *hlptim);
 /* Non-Blocking mode: Interrupt */
 HAL_StatusTypeDef HAL_LPTIM_Counter_Start_IT(LPTIM_HandleTypeDef *hlptim, uint32_t Period);
 HAL_StatusTypeDef HAL_LPTIM_Counter_Stop_IT(LPTIM_HandleTypeDef *hlptim);
+/**
+  * @}
+  */
 
+/** @addtogroup LPTIM_Exported_Functions_Group3
+ *  @brief  Read operation functions.
+ * @{
+ */
 /* Reading operation functions ************************************************/
 uint32_t HAL_LPTIM_ReadCounter(LPTIM_HandleTypeDef *hlptim);
 uint32_t HAL_LPTIM_ReadAutoReload(LPTIM_HandleTypeDef *hlptim);
 uint32_t HAL_LPTIM_ReadCompare(LPTIM_HandleTypeDef *hlptim);
+/**
+  * @}
+  */
 
+/** @addtogroup LPTIM_Exported_Functions_Group4
+ *  @brief  LPTIM IRQ handler and callback functions.
+ * @{
+ */
 /* LPTIM IRQ functions  *******************************************************/
 void HAL_LPTIM_IRQHandler(LPTIM_HandleTypeDef *hlptim);
 
@@ -740,9 +765,19 @@ void HAL_LPTIM_RepCounterWriteCallback(LPTIM_HandleTypeDef *hlptim);
 HAL_StatusTypeDef HAL_LPTIM_RegisterCallback(LPTIM_HandleTypeDef *lphtim, HAL_LPTIM_CallbackIDTypeDef CallbackID, pLPTIM_CallbackTypeDef pCallback);
 HAL_StatusTypeDef HAL_LPTIM_UnRegisterCallback(LPTIM_HandleTypeDef *lphtim, HAL_LPTIM_CallbackIDTypeDef CallbackID);
 #endif /* USE_HAL_LPTIM_REGISTER_CALLBACKS */
+/**
+  * @}
+  */
 
+/** @addtogroup LPTIM_Group5
+ *  @brief   Peripheral State functions.
+ * @{
+ */
 /* Peripheral State functions  ************************************************/
 HAL_LPTIM_StateTypeDef HAL_LPTIM_GetState(LPTIM_HandleTypeDef *hlptim);
+/**
+  * @}
+  */
 
 /**
   * @}

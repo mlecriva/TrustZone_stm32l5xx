@@ -27,7 +27,7 @@
       (+) Read / write protections
       (+) Option bytes programming
 	  (+) TrustZone aware
-	  (+) Watermark-based area protection including Pcrop and secure hide area
+	  (+) Watermark-based area protection including secure hide area
 	  (+) Block-based page protection
       (+) Error code correction (ECC) : Data in flash are 72-bits word
           (8 bits added per double word)
@@ -98,24 +98,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private defines -----------------------------------------------------------*/
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-#define FLASH_CR         FLASH->SECCR        /* Alias Secure Flash memory access */
-#define FLASH_SR         FLASH->SECSR        /* Alias Secure Flash memory access */
-
-#define FLASH_CR_PG      FLASH_SECCR_SECPG   /* Alias Secure Program bit */
-#define FLASH_CR_MER1    FLASH_SECCR_SECMER1 /* Alias Secure Mass Erase Bank1 bit */
-#define FLASH_CR_MER2    FLASH_SECCR_SECMER2 /* Alias Secure Mass Erase Bank2 bit */
-#define FLASH_CR_PER     FLASH_SECCR_SECPER  /* Alias Secure Page Erase bit */
-#else
-#define FLASH_CR         FLASH->NSCR         /* Alias Legacy/Non-Secure Flash memory access */
-#define FLASH_SR         FLASH->NSSR         /* Alias Legacy/Non-Secure Flash memory access */
-
-#define FLASH_CR_PG      FLASH_NSCR_NSPG     /* Alias Legacy/Non-Secure Program bit */
-#define FLASH_CR_MER1    FLASH_NSCR_NSMER1   /* Alias Legacy/Non-Secure Mass Erase Bank1 bit */
-#define FLASH_CR_MER2    FLASH_NSCR_NSMER2   /* Alias Legacy/Non-Secure Mass Erase Bank2 bit */
-#define FLASH_CR_PER     FLASH_NSCR_NSPER    /* Alias Legacy/Non-Secure Page Erase bit */
-#endif
-
 /* Private macros ------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /** @defgroup FLASH_Private_Variables FLASH Private Variables
@@ -177,6 +159,7 @@ static void FLASH_Program_DoubleWord(uint32_t Address, uint64_t Data);
 HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint64_t Data)
 {
   HAL_StatusTypeDef status;
+  __IO uint32_t *reg;
 
   /* Check the parameters */
   assert_param(IS_FLASH_TYPEPROGRAM(TypeProgram));
@@ -192,6 +175,9 @@ HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint
 
   if(status == HAL_OK)
   {
+    pFlash.ProcedureOnGoing = TypeProgram;
+    reg = IS_FLASH_SECURE_OPERATION() ? &(FLASH->SECCR) : &(FLASH_NS->NSCR);
+
     /* Program double-word (64-bit) at a specified address */
     FLASH_Program_DoubleWord(Address, Data);
 
@@ -199,7 +185,7 @@ HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint
     status = FLASH_WaitForLastOperation(FLASH_TIMEOUT_VALUE);
 
     /* If the program operation is completed, disable the PG Bit */
-    CLEAR_BIT(FLASH_CR, FLASH_TYPEPROGRAM_DOUBLEWORD);
+    CLEAR_BIT((*reg), (pFlash.ProcedureOnGoing & ~(FLASH_NON_SECURE_MASK)));
   }
 
   /* Process Unlocked */
@@ -221,6 +207,7 @@ HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint
 HAL_StatusTypeDef HAL_FLASH_Program_IT(uint32_t TypeProgram, uint32_t Address, uint64_t Data)
 {
   HAL_StatusTypeDef status;
+  __IO uint32_t *reg_cr;
 
   /* Check the parameters */
   assert_param(IS_FLASH_TYPEPROGRAM(TypeProgram));
@@ -244,9 +231,12 @@ HAL_StatusTypeDef HAL_FLASH_Program_IT(uint32_t TypeProgram, uint32_t Address, u
     /* Set internal variables used by the IRQ handler */
     pFlash.ProcedureOnGoing = TypeProgram;
     pFlash.Address = Address;
+    
+    /* Access to SECCR or NSCR depends on operation type */
+    reg_cr = IS_FLASH_SECURE_OPERATION() ? &(FLASH->SECCR) : &(FLASH_NS->NSCR);
 
     /* Enable End of Operation and Error interrupts */
-    __HAL_FLASH_ENABLE_IT(FLASH_IT_EOP | FLASH_IT_OPERR);
+    (*reg_cr) |= (FLASH_IT_EOP | FLASH_IT_OPERR);
 
     /* Program double-word (64-bit) at a specified address */
     FLASH_Program_DoubleWord(Address, Data);
@@ -262,24 +252,30 @@ HAL_StatusTypeDef HAL_FLASH_Program_IT(uint32_t TypeProgram, uint32_t Address, u
 void HAL_FLASH_IRQHandler(void)
 {
   uint32_t param = 0U;
-  uint32_t error;
+  uint32_t error, type;
+  __IO uint32_t *reg;
+  __IO uint32_t *reg_sr;
+
+  type = (pFlash.ProcedureOnGoing & ~(FLASH_NON_SECURE_MASK));
+  reg = IS_FLASH_SECURE_OPERATION() ? &(FLASH->SECCR) : &(FLASH_NS->NSCR);
+  reg_sr = IS_FLASH_SECURE_OPERATION() ? &(FLASH->SECSR) : &(FLASH_NS->NSSR);
 
   /* Save Flash errors */
-  error = (FLASH_SR & FLASH_FLAG_SR_ERRORS);
+  error = (*reg_sr) & FLASH_FLAG_SR_ERRORS;
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
   error |= (FLASH->NSSR & FLASH_FLAG_OPTWERR);
-#endif
+#endif /* __ARM_FEATURE_CMSE */
 
   /* Set parameter of the callback */
-  if(pFlash.ProcedureOnGoing == FLASH_TYPEERASE_PAGES)
+  if(type == FLASH_TYPEERASE_PAGES)
   {
     param = pFlash.Page;
   }
-  else if(pFlash.ProcedureOnGoing == FLASH_TYPEERASE_MASSERASE)
+  else if(type == FLASH_TYPEERASE_MASSERASE)
   {
     param = pFlash.Bank;
   }
-  else if(pFlash.ProcedureOnGoing == FLASH_TYPEPROGRAM_DOUBLEWORD)
+  else if(type == FLASH_TYPEPROGRAM_DOUBLEWORD)
   {
     param = pFlash.Address;
   }
@@ -289,7 +285,7 @@ void HAL_FLASH_IRQHandler(void)
   }
 
   /* Clear bit on the on-going procedure */
-  CLEAR_BIT(FLASH_CR, pFlash.ProcedureOnGoing);
+  CLEAR_BIT((*reg), type);
 
   /* Check FLASH operation error flags */
   if(error != 0U)
@@ -298,7 +294,13 @@ void HAL_FLASH_IRQHandler(void)
     pFlash.ErrorCode |= error;
 
     /* Clear error programming flags */
-    __HAL_FLASH_CLEAR_FLAG(error);
+    (*reg_sr) = error;
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+    if ((error & FLASH_FLAG_OPTWERR) != 0U)
+    {
+      FLASH->NSSR = FLASH_FLAG_OPTWERR;
+    }
+#endif /* __ARM_FEATURE_CMSE */
 
     /* Stop the procedure ongoing */
     pFlash.ProcedureOnGoing = 0U;
@@ -308,12 +310,12 @@ void HAL_FLASH_IRQHandler(void)
   }
 
   /* Check FLASH End of Operation flag  */
-  if(__HAL_FLASH_GET_FLAG(FLASH_FLAG_EOP))
+  if (((*reg_sr) & FLASH_FLAG_EOP) != 0U)
   {
     /* Clear FLASH End of Operation pending bit */
-    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP);
+    (*reg_sr) = FLASH_FLAG_EOP;
 
-    if(pFlash.ProcedureOnGoing == FLASH_TYPEERASE_PAGES)
+    if(type == FLASH_TYPEERASE_PAGES)
     {
       /* Nb of pages to erased can be decreased */
       pFlash.NbPagesToErase--;
@@ -345,7 +347,7 @@ void HAL_FLASH_IRQHandler(void)
   if(pFlash.ProcedureOnGoing == 0U)
   {
     /* Disable End of Operation and Error interrupts */
-    __HAL_FLASH_DISABLE_IT(FLASH_IT_EOP | FLASH_IT_OPERR);
+    (*reg) &= ~(FLASH_IT_EOP | FLASH_IT_OPERR);
 
     /* Process Unlocked */
     __HAL_UNLOCK(&pFlash);
@@ -432,14 +434,14 @@ HAL_StatusTypeDef HAL_FLASH_Unlock(void)
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
   if (status == HAL_OK)
   {
-    if(READ_BIT(FLASH_CR, FLASH_SECCR_SECLOCK) != 0u)
+    if(READ_BIT(FLASH->SECCR, FLASH_SECCR_SECLOCK) != 0u)
     {
       /* Authorize the FLASH Registers access */
       WRITE_REG(FLASH->SECKEYR, FLASH_KEY1);
       WRITE_REG(FLASH->SECKEYR, FLASH_KEY2);
 
       /* verify Flash is unlocked */
-      if (READ_BIT(FLASH_CR, FLASH_SECCR_SECLOCK) != 0u)
+      if (READ_BIT(FLASH->SECCR, FLASH_SECCR_SECLOCK) != 0u)
       {
         status = HAL_ERROR;
       }
@@ -470,10 +472,10 @@ HAL_StatusTypeDef HAL_FLASH_Lock(void)
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
   if (status == HAL_OK)
   {
-    SET_BIT(FLASH_CR, FLASH_SECCR_SECLOCK);
+    SET_BIT(FLASH->SECCR, FLASH_SECCR_SECLOCK);
 
     /* verify Flash is locked */
-    if (READ_BIT(FLASH_CR, FLASH_SECCR_SECLOCK) != 0u)
+    if (READ_BIT(FLASH->SECCR, FLASH_SECCR_SECLOCK) != 0u)
     {
       status = HAL_OK;
     }
@@ -565,7 +567,6 @@ HAL_StatusTypeDef HAL_FLASH_OB_Launch(void)
   *            @arg HAL_FLASH_ERROR_PGA: FLASH Programming alignment error
   *            @arg HAL_FLASH_ERROR_SIZ: FLASH Size error
   *            @arg HAL_FLASH_ERROR_PGS: FLASH Programming sequence error
-  *            @arg HAL_FLASH_ERROR_RD: FLASH PCROP read error
   *            @arg HAL_FLASH_ERROR_OPTW: FLASH Option modification error
   */
 uint32_t HAL_FLASH_GetError(void)
@@ -600,6 +601,7 @@ HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout)
 
   uint32_t timeout = HAL_GetTick() + Timeout;
   uint32_t error;
+  __IO uint32_t *reg_sr;
 
   while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY))
   {
@@ -611,12 +613,15 @@ HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout)
       }
     }
   }
+  
+  /* Access to SECSR or NSSR registers depends on operation type */
+  reg_sr = IS_FLASH_SECURE_OPERATION() ? &(FLASH->SECSR) : &(FLASH_NS->NSSR);
 
-  /* Save Flash errors */
-  error = (FLASH_SR & FLASH_FLAG_SR_ERRORS);
+  /* Check FLASH operation error flags */
+  error = ((*reg_sr) & FLASH_FLAG_SR_ERRORS);
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
   error |= (FLASH->NSSR & FLASH_FLAG_OPTWERR);
-#endif
+#endif /* __ARM_FEATURE_CMSE */ 
 
   if(error != 0u)
   {
@@ -624,16 +629,22 @@ HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout)
     pFlash.ErrorCode |= error;
 
     /* Clear error programming flags */
-    __HAL_FLASH_CLEAR_FLAG(error);
+    (*reg_sr) = error;
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+    if ((error & FLASH_FLAG_OPTWERR) != 0U)
+    {
+      FLASH->NSSR = FLASH_FLAG_OPTWERR;
+    }
+#endif /* __ARM_FEATURE_CMSE */
 
     return HAL_ERROR;
   }
 
   /* Check FLASH End of Operation flag  */
-  if (__HAL_FLASH_GET_FLAG(FLASH_FLAG_EOP))
+  if (((*reg_sr) & FLASH_FLAG_EOP) != 0U)
   {
     /* Clear FLASH End of Operation pending bit */
-    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP);
+    (*reg_sr) = FLASH_FLAG_EOP;
   }
 
   /* If there is an error flag set */
@@ -648,15 +659,33 @@ HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout)
   */
 static void FLASH_Program_DoubleWord(uint32_t Address, uint64_t Data)
 {
+  uint32_t primask_bit;
+  __IO uint32_t *reg;
   /* Check the parameters */
   assert_param(IS_FLASH_PROGRAM_ADDRESS(Address));
+  
+  /* Access to SECCR or NSCR registers depends on operation type */
+  reg = IS_FLASH_SECURE_OPERATION() ? &(FLASH->SECCR) : &(FLASH_NS->NSCR);
+
+  /* Disable interrupts to avoid any interruption during the double word programming */
+  primask_bit = __get_PRIMASK();
+  __disable_irq();
 
   /* Set PG bit */
-  SET_BIT(FLASH_CR, FLASH_CR_PG);
+  SET_BIT((*reg), FLASH_NSCR_NSPG);
 
-  /* Program the double word */
+  /* Program first word */
   *(uint32_t*)Address = (uint32_t)Data;
+
+  /* Barrier to ensure programming is performed in 2 steps, in right order
+    (independently of compiler optimization behavior) */
+  __ISB();
+
+  /* Program second word */
   *(uint32_t*)(Address+4U) = (uint32_t)(Data >> 32U);
+
+  /* Re-enable the interrupts */
+  __set_PRIMASK(primask_bit);
 }
 
 /**

@@ -1065,6 +1065,8 @@ HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, u
       pdata16bits = NULL;
     }
 
+    __HAL_UNLOCK(huart);
+
     while (huart->TxXferCount > 0U)
     {
       if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)
@@ -1091,8 +1093,6 @@ HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, u
 
     /* At end of Tx process, restore huart->gState to Ready */
     huart->gState = HAL_UART_STATE_READY;
-
-    __HAL_UNLOCK(huart);
 
     return HAL_OK;
   }
@@ -1159,6 +1159,8 @@ HAL_StatusTypeDef HAL_UART_Receive(UART_HandleTypeDef *huart, uint8_t *pData, ui
       pdata16bits = NULL;
     }
 
+    __HAL_UNLOCK(huart);
+
     /* as long as data have to be received */
     while (huart->RxXferCount > 0U)
     {
@@ -1181,8 +1183,6 @@ HAL_StatusTypeDef HAL_UART_Receive(UART_HandleTypeDef *huart, uint8_t *pData, ui
 
     /* At end of Rx process, restore huart->RxState to Ready */
     huart->RxState = HAL_UART_STATE_READY;
-
-    __HAL_UNLOCK(huart);
 
     return HAL_OK;
   }

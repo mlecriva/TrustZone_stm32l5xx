@@ -965,6 +965,7 @@ HAL_StatusTypeDef HAL_CRYP_Suspend(CRYP_HandleTypeDef *hcryp)
     hcryp->Phase_saved             = hcryp->Phase;
     hcryp->State_saved             = hcryp->State;
     hcryp->Size_saved              = ( (hcryp->Init.DataWidthUnit == CRYP_DATAWIDTHUNIT_WORD) ? (hcryp->Size /4U) : hcryp->Size);
+    hcryp->SizesSum_saved          = hcryp->SizesSum;
     hcryp->AutoKeyDerivation_saved = hcryp->AutoKeyDerivation;
     hcryp->CrypHeaderCount_saved   = hcryp->CrypHeaderCount;
     hcryp->SuspendRequest          = HAL_CRYP_SUSPEND_NONE;
@@ -994,6 +995,12 @@ HAL_StatusTypeDef HAL_CRYP_Suspend(CRYP_HandleTypeDef *hcryp)
   */
 HAL_StatusTypeDef HAL_CRYP_Resume(CRYP_HandleTypeDef *hcryp)
 {
+  /* Check the CRYP handle allocation */
+  if (hcryp == NULL)
+  {
+    return HAL_ERROR;
+  }
+
   if (hcryp->State_saved != HAL_CRYP_STATE_SUSPENDED)
   {
     /* CRYP was not suspended */
@@ -1020,16 +1027,14 @@ HAL_StatusTypeDef HAL_CRYP_Resume(CRYP_HandleTypeDef *hcryp)
         hcryp->Init.pInitVect     = hcryp->IV_saved;
       }
       __HAL_CRYP_DISABLE(hcryp);
-      if (HAL_CRYP_Init(hcryp) != HAL_OK)
-      {
-        return HAL_ERROR;
-      }
+      (void) HAL_CRYP_Init(hcryp);
     }
     else    /* Authentication algorithms case */
     {
       /* Restore low-priority block CRYP handle parameters */
       hcryp->Phase           = hcryp->Phase_saved;
       hcryp->CrypHeaderCount = hcryp->CrypHeaderCount_saved;
+      hcryp->SizesSum        = hcryp->SizesSum_saved;
 
       /* Disable AES and write-back SUSPxR registers */;
       __HAL_CRYP_DISABLE(hcryp);
@@ -1039,8 +1044,6 @@ HAL_StatusTypeDef HAL_CRYP_Resume(CRYP_HandleTypeDef *hcryp)
       hcryp->Instance->CR = hcryp->CR_saved;
       CRYP_Write_KeyRegisters(hcryp, hcryp->Key_saved, hcryp->Init.KeySize);
       CRYP_Write_IVRegisters(hcryp, hcryp->IV_saved);
-      __HAL_CRYP_ENABLE_IT(hcryp,CRYP_IT_CCFIE | CRYP_IT_ERRIE);
-      __HAL_CRYP_ENABLE(hcryp);
 
       /* At the same time, set handle state back to READY to be able to resume the AES calculations
       without the processing APIs returning HAL_BUSY when called. */
@@ -1191,6 +1194,12 @@ HAL_StatusTypeDef HAL_CRYP_Encrypt(CRYP_HandleTypeDef *hcryp, uint32_t *Input, u
 {
   uint32_t algo;
   HAL_StatusTypeDef status;
+#ifdef  USE_FULL_ASSERT
+  uint32_t algo_assert = (hcryp->Instance->CR) & AES_CR_CHMOD;
+
+  /* Check input buffer size */
+  assert_param(IS_CRYP_BUFFERSIZE(algo_assert, hcryp->Init.DataWidthUnit, Size));
+#endif
 
   if (hcryp->State == HAL_CRYP_STATE_READY)
   {
@@ -1285,6 +1294,12 @@ HAL_StatusTypeDef HAL_CRYP_Decrypt(CRYP_HandleTypeDef *hcryp, uint32_t *Input, u
 {
   HAL_StatusTypeDef status;
   uint32_t algo;
+#ifdef  USE_FULL_ASSERT
+  uint32_t algo_assert = (hcryp->Instance->CR) & AES_CR_CHMOD;
+
+  /* Check input buffer size */
+  assert_param(IS_CRYP_BUFFERSIZE(algo_assert, hcryp->Init.DataWidthUnit, Size));
+#endif
 
   if (hcryp->State == HAL_CRYP_STATE_READY)
   {
@@ -1378,6 +1393,12 @@ HAL_StatusTypeDef HAL_CRYP_Encrypt_IT(CRYP_HandleTypeDef *hcryp, uint32_t *Input
 {
   HAL_StatusTypeDef status;
   uint32_t algo;
+#ifdef  USE_FULL_ASSERT
+  uint32_t algo_assert = (hcryp->Instance->CR) & AES_CR_CHMOD;
+
+  /* Check input buffer size */
+  assert_param(IS_CRYP_BUFFERSIZE(algo_assert, hcryp->Init.DataWidthUnit, Size));
+#endif
 
   if (hcryp->State == HAL_CRYP_STATE_READY)
   {
@@ -1482,6 +1503,12 @@ HAL_StatusTypeDef HAL_CRYP_Decrypt_IT(CRYP_HandleTypeDef *hcryp, uint32_t *Input
 {
   HAL_StatusTypeDef status;
   uint32_t algo;
+#ifdef  USE_FULL_ASSERT
+  uint32_t algo_assert = (hcryp->Instance->CR) & AES_CR_CHMOD;
+
+  /* Check input buffer size */
+  assert_param(IS_CRYP_BUFFERSIZE(algo_assert, hcryp->Init.DataWidthUnit, Size));
+#endif
 
   if (hcryp->State == HAL_CRYP_STATE_READY)
   {
@@ -1586,6 +1613,12 @@ HAL_StatusTypeDef HAL_CRYP_Encrypt_DMA(CRYP_HandleTypeDef *hcryp, uint32_t *Inpu
   HAL_StatusTypeDef status;
   uint32_t algo;
   uint32_t DoKeyIVConfig = 1U; /* By default, carry out peripheral Key and IV configuration */
+#ifdef  USE_FULL_ASSERT
+  uint32_t algo_assert = (hcryp->Instance->CR) & AES_CR_CHMOD;
+
+  /* Check input buffer size */
+  assert_param(IS_CRYP_BUFFERSIZE(algo_assert, hcryp->Init.DataWidthUnit, Size));
+#endif
 
   if (hcryp->State == HAL_CRYP_STATE_READY)
   {
@@ -1706,6 +1739,12 @@ HAL_StatusTypeDef HAL_CRYP_Decrypt_DMA(CRYP_HandleTypeDef *hcryp, uint32_t *Inpu
 {
   HAL_StatusTypeDef status;
   uint32_t algo;
+#ifdef  USE_FULL_ASSERT
+  uint32_t algo_assert = (hcryp->Instance->CR) & AES_CR_CHMOD;
+
+  /* Check input buffer size */
+  assert_param(IS_CRYP_BUFFERSIZE(algo_assert, hcryp->Init.DataWidthUnit, Size));
+#endif
 
   if (hcryp->State == HAL_CRYP_STATE_READY)
   {
@@ -5194,6 +5233,15 @@ static void CRYP_PhaseProcessingResume(CRYP_HandleTypeDef *hcryp)
   uint16_t lastwordsize;
   uint16_t npblb;
   uint32_t cr_temp;
+
+
+  __HAL_CRYP_CLEAR_FLAG(hcryp, CRYP_ERR_CLEAR | CRYP_CCF_CLEAR);
+
+  /* Enable computation complete flag and error interrupts */
+  __HAL_CRYP_ENABLE_IT(hcryp, CRYP_IT_CCFIE | CRYP_IT_ERRIE);
+
+  /* Enable the CRYP peripheral */
+  __HAL_CRYP_ENABLE(hcryp);
 
   /* Case of header phase resumption =================================================*/
   if (hcryp->Phase == CRYP_PHASE_HEADER_SUSPENDED)

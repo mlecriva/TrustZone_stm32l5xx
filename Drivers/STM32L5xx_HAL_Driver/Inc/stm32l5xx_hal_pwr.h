@@ -188,7 +188,7 @@ typedef struct
   */
 
 /** @brief  Check whether or not a specific PWR flag is set.
-  * @param  __FLAG__: specifies the flag to check.
+  * @param  __FLAG__ specifies the flag to check.
   *           This parameter can be one of the following values:
   *            @arg @ref PWR_FLAG_WUF1 Wake Up Flag 1. Indicates that a wakeup event
   *                  was received from the WKUP pin 1.
@@ -230,7 +230,7 @@ typedef struct
                                       (PWR->SR2 & (1U << ((__FLAG__) & 31U))) )
 
 /** @brief  Clear a specific PWR flag.
-  * @param  __FLAG__: specifies the flag to clear.
+  * @param  __FLAG__ specifies the flag to clear.
   *          This parameter can be one of the following values:
   *            @arg @ref PWR_FLAG_WUF1 Wake Up Flag 1. Indicates that a wakeup event
   *                  was received from the WKUP pin 1.

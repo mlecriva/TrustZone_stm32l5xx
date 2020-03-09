@@ -59,18 +59,12 @@
 /** @defgroup PWREx_TimeOut_Value PWR Extended Flag Setting Time Out Value
   * @{
   */
-#define PWR_FLAG_SETTING_DELAY_US                   50000UL   /*!< Time out value for REGLPF and VOSF flags setting */
-/**
-  * @}
-  */
+#define PWR_REGLP_SETTING_DELAY_VALUE            300UL   /*!< Time out value for REGLPF flag setting */
 
-/** @defgroup PWREx_modechange_TimeOut_Value  Extended Flag Setting Time Out for step down converter operating mode.
-  * @{
-  */
-   /* This current value is derived from SW caracterization */
-   /* the value needs to be refined */
-#define PWR_MODE_CHANGE_DELAY_US                     1000UL   /*!< Time Out for step down converter operating mode */
-   
+#define PWR_VOSF_SETTING_DELAY_VALUE              50UL   /*!< Time out value for VOSF flag setting */
+
+#define PWR_MODE_CHANGE_DELAY_VALUE             1000UL   /*!< Time out for step down converter operating mode */
+
 /**
   * @}
   */
@@ -113,7 +107,7 @@ uint32_t HAL_PWREx_GetVoltageRange(void)
 
 /**
   * @brief Configure the main internal regulator output voltage.
-  * @param  VoltageScaling: specifies the regulator output voltage to achieve
+  * @param  VoltageScaling specifies the regulator output voltage to achieve
   *         a tradeoff between performance and power consumption.
   *          This parameter can be one of the following values:
   *            @arg @ref PWR_REGULATOR_VOLTAGE_SCALE0 Regulator voltage output range 0 mode,
@@ -130,10 +124,10 @@ uint32_t HAL_PWREx_GetVoltageRange(void)
   *        When moving from Range 2 to Range 1, the system frequency can be increased to
   *        a value up to 80 MHz after calling HAL_PWREx_ControlVoltageScaling() API.
   * @note  When moving from one Range to another , the API waits for VOSF flag to be
-  *        cleared before returning the status. If the flag is not cleared within
-  *        50 microseconds, HAL_TIMEOUT status is reported.
+  *        cleared before returning the status. If the flag is not cleared within limited time duration,
+  *        HAL_TIMEOUT status is reported.
   * @note  The VOS shall NOT be changed in LP Mode of if LP mode is asked.
-  * @note  The function shall not be called in Low-power run mode (meaningless and misleading). 
+  * @note  The function shall not be called in Low-power run mode (meaningless and misleading).
   * @retval HAL Status
   */
 HAL_StatusTypeDef HAL_PWREx_ControlVoltageScaling(uint32_t VoltageScaling)
@@ -150,12 +144,11 @@ HAL_StatusTypeDef HAL_PWREx_ControlVoltageScaling(uint32_t VoltageScaling)
   {
     return HAL_ERROR;
   }
-  if (READ_BIT(PWR->CR4, PWR_CR4_SMPSBYP | PWR_CR4_SMPSLPEN) == PWR_CR4_SMPSLPEN)
+  if (READ_BIT(PWR->CR4, PWR_CR4_SMPSLPEN) == PWR_CR4_SMPSLPEN)
   {
     return HAL_ERROR;
   }
-  
-  
+
   /* No change, nothing to do */
   if (vos_old == VoltageScaling)
   {
@@ -165,7 +158,9 @@ HAL_StatusTypeDef HAL_PWREx_ControlVoltageScaling(uint32_t VoltageScaling)
   MODIFY_REG(PWR->CR1, PWR_CR1_VOS, VoltageScaling);
 
   /* Wait until VOSF is cleared */
-  wait_loop_index = ((PWR_FLAG_SETTING_DELAY_US * SystemCoreClock) / 1000000U) + 1U;
+  /* and at least one iteration loop */
+  wait_loop_index = ((PWR_VOSF_SETTING_DELAY_VALUE * (SystemCoreClock / 100000U)) / 10U) + 1U;
+
   while ((HAL_IS_BIT_SET(PWR->SR2, PWR_SR2_VOSF)) && (wait_loop_index != 0U))
   {
     wait_loop_index--;
@@ -182,7 +177,7 @@ HAL_StatusTypeDef HAL_PWREx_ControlVoltageScaling(uint32_t VoltageScaling)
 /**
   * @brief Enable battery charging.
   *        When VDD is present, charge the external battery on VBAT thru an internal resistor.
-  * @param  ResistorSelection: specifies the resistor impedance.
+  * @param  ResistorSelection specifies the resistor impedance.
   *          This parameter can be one of the following values:
   *            @arg @ref PWR_BATTERY_CHARGING_RESISTOR_5     5 kOhms resistor
   *            @arg @ref PWR_BATTERY_CHARGING_RESISTOR_1_5 1.5 kOhms resistor
@@ -263,9 +258,9 @@ void HAL_PWREx_DisableVddIO2(void)
   *        PDy bit of PWR_PDCRx register is cleared unless it is reserved.
   * @note  Even if a PUy bit to set is reserved, the other PUy bits entered as input
   *        parameter at the same time are set.
-  * @param  GPIO: Specify the IO port. This parameter can be PWR_GPIO_A, ..., PWR_GPIO_H
+  * @param  GPIO specifies the IO port. This parameter can be PWR_GPIO_A, ..., PWR_GPIO_H
   *         (or PWR_GPIO_I depending on the devices) to select the GPIO peripheral.
-  * @param  GPIONumber: Specify the I/O pins numbers.
+  * @param  GPIONumber specifies the I/O pins numbers.
   *         This parameter can be one of the following values:
   *         PWR_GPIO_BIT_0, ..., PWR_GPIO_BIT_15 (except for the port where less
   *         I/O pins are available) or the logical OR of several of them to set
@@ -328,9 +323,9 @@ HAL_StatusTypeDef HAL_PWREx_EnableGPIOPullUp(uint32_t GPIO, uint32_t GPIONumber)
   *        in pull-up state in Standby and Shutdown modes.
   * @note  Even if a PUy bit to reset is reserved, the other PUy bits entered as input
   *        parameter at the same time are reset.
-  * @param  GPIO: Specifies the IO port. This parameter can be PWR_GPIO_A, ..., PWR_GPIO_H
+  * @param  GPIO specifies the IO port. This parameter can be PWR_GPIO_A, ..., PWR_GPIO_H
   *          (or PWR_GPIO_I depending on the devices) to select the GPIO peripheral.
-  * @param  GPIONumber: Specify the I/O pins numbers.
+  * @param  GPIONumber specifies the I/O pins numbers.
   *         This parameter can be one of the following values:
   *         PWR_GPIO_BIT_0, ..., PWR_GPIO_BIT_15 (except for the port where less
   *         I/O pins are available) or the logical OR of several of them to reset
@@ -392,9 +387,9 @@ HAL_StatusTypeDef HAL_PWREx_DisableGPIOPullUp(uint32_t GPIO, uint32_t GPIONumber
   *        PUy bit of PWR_PUCRx register is cleared unless it is reserved.
   * @note  Even if a PDy bit to set is reserved, the other PDy bits entered as input
   *        parameter at the same time are set.
-  * @param  GPIO: Specify the IO port. This parameter can be PWR_GPIO_A..PWR_GPIO_H
+  * @param  GPIO specifies the IO port. This parameter can be PWR_GPIO_A..PWR_GPIO_H
   *         (or PWR_GPIO_I depending on the devices) to select the GPIO peripheral.
-  * @param  GPIONumber: Specify the I/O pins numbers.
+  * @param  GPIONumber specifies the I/O pins numbers.
   *         This parameter can be one of the following values:
   *         PWR_GPIO_BIT_0, ..., PWR_GPIO_BIT_15 (except for the port where less
   *         I/O pins are available) or the logical OR of several of them to set
@@ -457,9 +452,9 @@ HAL_StatusTypeDef HAL_PWREx_EnableGPIOPullDown(uint32_t GPIO, uint32_t GPIONumbe
   *        in pull-down state in Standby and Shutdown modes.
   * @note  Even if a PDy bit to reset is reserved, the other PDy bits entered as input
   *        parameter at the same time are reset.
-  * @param  GPIO: Specifies the IO port. This parameter can be PWR_GPIO_A..PWR_GPIO_H
+  * @param  GPIO specifies the IO port. This parameter can be PWR_GPIO_A..PWR_GPIO_H
   *         (or PWR_GPIO_I depending on the devices) to select the GPIO peripheral.
-  * @param  GPIONumber: Specify the I/O pins numbers.
+  * @param  GPIONumber specifies the I/O pins numbers.
   *         This parameter can be one of the following values:
   *         PWR_GPIO_BIT_0, ..., PWR_GPIO_BIT_15 (except for the port where less
   *         I/O pins are available) or the logical OR of several of them to reset
@@ -661,7 +656,7 @@ void HAL_PWREx_DisablePVM4(void)
 
 /**
   * @brief Configure the Peripheral Voltage Monitoring (PVM).
-  * @param sConfigPVM: pointer to a PWR_PVMTypeDef structure that contains the
+  * @param sConfigPVM pointer to a PWR_PVMTypeDef structure that contains the
   *        PVM configuration information.
   * @note The API configures a single PVM according to the information contained
   *       in the input structure. To configure several PVMs, the API must be singly
@@ -852,7 +847,9 @@ HAL_StatusTypeDef HAL_PWREx_DisableLowPowerRunMode(void)
   CLEAR_BIT(PWR->CR1, PWR_CR1_LPR);
 
   /* Wait until REGLPF is reset */
-  wait_loop_index = ((PWR_FLAG_SETTING_DELAY_US * SystemCoreClock) / 1000000U) + 1U;
+  /* and at least one iteration loop */
+  wait_loop_index = ((PWR_REGLP_SETTING_DELAY_VALUE * (SystemCoreClock / 100000U)) / 10U) + 1U;
+
   while ((HAL_IS_BIT_SET(PWR->SR2, PWR_SR2_REGLPF)) && (wait_loop_index != 0U))
   {
     wait_loop_index--;
@@ -1253,20 +1250,21 @@ void HAL_PWREx_DisableUltraLowPowerMode(void)
 
 /**
   * @brief Set SMPS step down converter operating mode.
-  * @param  OperatingMode This parameter can be one of the following values:
+  * @param OperatingMode This parameter can be one of the following values:
   *         @arg @ref PWR_SMPS_HIGH_POWER    SMPS step down converter in high-power mode (default)
   *         @arg @ref PWR_SMPS_LOW_POWER     SMPS step down converter in low-power mode
   *         @arg @ref PWR_SMPS_BYPASS        SMPS step down converter in bypass mode
-  * @note The High power mode achieves the high efficiency at high current load.
-  * @note The Low power mode achieves the high effciency at low current load.
-  *       When enabled, the voltage scaling must not be modified. This mode can be only
-  *       selected when power consumption does not exceed 35 mA.
-  * @note The Low power mode can be enabled only when the regulator voltage is is range 2 mode. 
-  * @note When moving from one power mode to another, the API waits for new mode is taken
-  *       into account before returning the status. If the the new mode is not taken into account within
-  *       1000 microseconds, HAL_TIMEOUT status is reported.
+  * @note The High-power mode achieves the high efficiency at high current load.
+  * @note The Low-power mode achieves the high efficiency at low current load.
+  * @note The Low-power mode can be enabled only when the main regulator voltage is in range 2 mode.
+  *       When Low-power mode is enabled, the voltage scaling must not be modified. This mode can be
+  *       only selected when power consumption does not exceed 30 mA.
+  * @note When switching from one power mode to another, HAL_PWREx_SMPS_SetMode() waits for the new
+  *       mode to be effective within a limited time duration before returning the status HAL_OK
+  *       else it returns HAL_TIMEOUT. A request for Low power mode when the voltage regulator is not
+  *       in range 2 is rejected with HAL_ERROR.
   * @note The Bypass mode can be enabled or disabled on the fly whatever the selected operation mode.
-  * @note The function shall not be called in Low-power run mode (meaningless and misleading). 
+  * @note The function shall not be called in Low-power run mode (meaningless and misleading).
   * @retval HAL Status
   */
 
@@ -1286,7 +1284,7 @@ HAL_StatusTypeDef HAL_PWREx_SMPS_SetMode(uint32_t OperatingMode)
   else if (OperatingMode == PWR_SMPS_LOW_POWER)
   {
     /* ------------------------------------------------------------------------ */
-    /* LPM can only be set in range2 */
+    /* SMPS Low-power mode can only be set in range 2 */
     if (HAL_PWREx_GetVoltageRange() != PWR_REGULATOR_VOLTAGE_SCALE2)
     {
       return HAL_ERROR;
@@ -1294,23 +1292,16 @@ HAL_StatusTypeDef HAL_PWREx_SMPS_SetMode(uint32_t OperatingMode)
     else
     {
       pwr_sr1 = READ_REG(PWR->SR1);
-      /* Check SMPSHPRDY flag is set for existing High power mode */
-      if (READ_BIT(pwr_sr1, PWR_SR1_SMPSHPRDY) == PWR_SR1_SMPSHPRDY)
+
+      if (READ_BIT(pwr_sr1, PWR_SR1_SMPSHPRDY | PWR_SR1_SMPSBYPRDY) == 0U)
       {
-        MODIFY_REG(PWR->CR4, (PWR_CR4_SMPSBYP | PWR_CR4_SMPSLPEN), PWR_CR4_SMPSLPEN);
-      }
-      /* Else check if not already in Low power mode */
-      else if (READ_BIT(pwr_sr1, PWR_SR1_SMPSBYPRDY) == PWR_SR1_SMPSBYPRDY)
-      {
-        /* Would like to switch to Low power mode */
-        /* bus still in bypass mode */
-        /* HW to switch to low power mode whenever possible */
-        MODIFY_REG(PWR->CR4, (PWR_CR4_SMPSBYP | PWR_CR4_SMPSLPEN), PWR_CR4_SMPSLPEN);
+        /* Already in SMPS Low-power mode */
+        /* Nothing to configure      */   
       }
       else
       {
-        /* Already in Low power mode */
-        /* Nothing to configure      */
+        /* Switch to Low-power mode */
+        MODIFY_REG(PWR->CR4, (PWR_CR4_SMPSBYP | PWR_CR4_SMPSLPEN), PWR_CR4_SMPSLPEN);
       }
     }
   }
@@ -1320,8 +1311,9 @@ HAL_StatusTypeDef HAL_PWREx_SMPS_SetMode(uint32_t OperatingMode)
   }
 
   /* Wait until SMPS step down converter operating mode change */
-  wait_loop_index = ((PWR_MODE_CHANGE_DELAY_US * SystemCoreClock) / 1000000U) + 1U;
-  
+  /* and at least one iteration loop */
+  wait_loop_index = ((PWR_MODE_CHANGE_DELAY_VALUE * (SystemCoreClock / 100000U)) / 10U) + 1U;
+
   while ((HAL_PWREx_SMPS_GetEffectiveMode() != OperatingMode) && (wait_loop_index != 0U))
   {
     wait_loop_index--;
@@ -1330,12 +1322,11 @@ HAL_StatusTypeDef HAL_PWREx_SMPS_SetMode(uint32_t OperatingMode)
   if (HAL_PWREx_SMPS_GetEffectiveMode() == OperatingMode)
   {
     status = HAL_OK;
-  } 
+  }
   else
   {
     status = HAL_TIMEOUT;
   }
-
   return status;
 }
 
@@ -1427,6 +1418,29 @@ void HAL_PWREx_SMPS_EnableExternal(void)
 void HAL_PWREx_SMPS_DisableExternal(void)
 {
   CLEAR_BIT(PWR->CR4, PWR_CR4_EXTSMPSEN);
+}
+
+/**
+  * @brief  Get Main Regulator status for use with external SMPS
+  * @retval Returned value can be one of the following values:
+  *         @arg @ref PWR_MAINREG_READY_FOR_EXTSMPS     Main regulator ready for use with external SMPS
+  *         @arg @ref PWR_MAINREG_NOT_READY_FOR_EXTSMPS Main regulator not ready for use with external SMPS
+  */
+uint32_t HAL_PWREx_SMPS_GetMainRegulatorExtSMPSReadyStatus(void)
+{
+  uint32_t main_regulator_status;
+  uint32_t pwr_sr1;
+
+  pwr_sr1 = READ_REG(PWR->SR1);
+  if (READ_BIT(pwr_sr1, PWR_SR1_EXTSMPSRDY) != 0U)
+  {
+    main_regulator_status = PWR_MAINREG_READY_FOR_EXTSMPS;
+  }
+  else
+  {
+    main_regulator_status = PWR_MAINREG_NOT_READY_FOR_EXTSMPS;
+  }
+  return main_regulator_status;
 }
 
 /**

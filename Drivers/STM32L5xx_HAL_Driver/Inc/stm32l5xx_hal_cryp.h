@@ -186,6 +186,8 @@ typedef struct
 
   uint16_t                    CrypHeaderCount_saved;   /*!< copy of CRYP header data counter when processing is suspended */
 
+  uint32_t                    SizesSum_saved;          /*!< copy of SizesSum when processing is suspended */
+
   uint32_t                    ResumingFlag;            /*!< resumption flag to bypass steps already carried out */
 
   FunctionalState             AutoKeyDerivation_saved; /*!< copy of CRYP handle auto key derivation parameter */
@@ -564,6 +566,12 @@ uint32_t HAL_CRYP_GetError(CRYP_HandleTypeDef *hcryp);
 
 #define IS_CRYP_INIT(CONFIG)(((CONFIG) == CRYP_KEYIVCONFIG_ALWAYS) || \
                              ((CONFIG) == CRYP_KEYIVCONFIG_ONCE))
+
+#define IS_CRYP_BUFFERSIZE(ALGO, DATAWIDTH, SIZE)                                             \
+      (((((ALGO) == CRYP_AES_ECB) || ((ALGO) == CRYP_AES_CBC) || ((ALGO) == CRYP_AES_CTR)) && \
+            ((((DATAWIDTH) == CRYP_DATAWIDTHUNIT_WORD) && (((SIZE) % 4U) == 0U))           || \
+             (((DATAWIDTH) == CRYP_DATAWIDTHUNIT_BYTE) && (((SIZE) % 16U) == 0U))))        || \
+        (((ALGO)== CRYP_AES_GCM_GMAC) || ((ALGO) == CRYP_AES_CCM)))
 
 /**
   * @}

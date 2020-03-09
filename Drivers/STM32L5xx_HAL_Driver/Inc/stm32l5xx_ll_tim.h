@@ -18,8 +18,8 @@
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef STM32L5xx_LL_TIM_H
-#define STM32L5xx_LL_TIM_H
+#ifndef __STM32L5xx_LL_TIM_H
+#define __STM32L5xx_LL_TIM_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -120,23 +120,8 @@ static const uint8_t SHIFT_TAB_OISx[] =
 #define TIM_POSITION_BRK_SOURCE            (POSITION_VAL(Source) & 0x1FUL)
 
 /* Generic bit definitions for TIMx_OR2 register */
-#define TIMx_OR2_BKINE     TIM1_OR2_BKINE     /*!< BRK BKIN input enable */
-#define TIMx_OR2_BKCOMP1E  TIM1_OR2_BKCMP1E   /*!< BRK COMP1 enable */
-#define TIMx_OR2_BKCOMP2E  TIM1_OR2_BKCMP2E   /*!< BRK COMP2 enable */
-#define TIMx_OR2_BKDF1BK0E TIM1_OR2_BKDF1BK0E /*!< BRK DFSDM1_BREAK[0] enable */
 #define TIMx_OR2_BKINP     TIM1_OR2_BKINP     /*!< BRK BKIN input polarity */
-#define TIMx_OR2_BKCOMP1P  TIM1_OR2_BKCMP1P   /*!< BRK COMP1 input polarity */
-#define TIMx_OR2_BKCOMP2P  TIM1_OR2_BKCMP2P   /*!< BRK COMP2 input polarity */
 #define TIMx_OR2_ETRSEL    TIM1_OR2_ETRSEL    /*!< TIMx ETR source selection */
-
-/* Generic bit definitions for TIMx_OR3 register */
-#define TIMx_OR3_BK2INE    TIM1_OR3_BK2INE      /*!< BRK2 BKIN2 input enable */
-#define TIMx_OR3_BK2COMP1E TIM1_OR3_BK2CMP1E    /*!< BRK2 COMP1 enable */
-#define TIMx_OR3_BK2COMP2E TIM1_OR3_BK2CMP2E    /*!< BRK2 COMP2 enable */
-#define TIMx_OR3_BK2DF1BK1E TIM1_OR3_BK2DF1BK1E /*!< BRK2 DFSDM1_BREAK[1] enable */
-#define TIMx_OR3_BK2INP    TIM1_OR3_BK2INP      /*!< BRK2 BKIN2 input polarity */
-#define TIMx_OR3_BK2COMP1P TIM1_OR3_BK2CMP1P    /*!< BRK2 COMP1 input polarity */
-#define TIMx_OR3_BK2COMP2P TIM1_OR3_BK2CMP2P    /*!< BRK2 COMP2 input polarity */
 
 /* Remap mask definitions */
 #define TIMx_OR1_RMP_SHIFT 16U
@@ -253,13 +238,14 @@ typedef struct
 
                                    This feature can be modified afterwards using unitary function @ref LL_TIM_SetClockDivision().*/
 
-  uint8_t RepetitionCounter;  /*!< Specifies the repetition counter value. Each time the RCR downcounter
+  uint32_t RepetitionCounter;  /*!< Specifies the repetition counter value. Each time the RCR downcounter
                                    reaches zero, an update event is generated and counting restarts
                                    from the RCR value (N).
                                    This means in PWM mode that (N+1) corresponds to:
                                       - the number of PWM periods in edge-aligned mode
                                       - the number of half PWM period in center-aligned mode
-                                   This parameter must be a number between 0x00 and 0xFF.
+                                   GP timers: this parameter must be a number between Min_Data = 0x00 and Max_Data = 0xFF.
+                                   Advanced timers: this parameter must be a number between Min_Data = 0x0000 and Max_Data = 0xFFFF.
 
                                    This feature can be modified afterwards using unitary function @ref LL_TIM_SetRepetitionCounter().*/
 } LL_TIM_InitTypeDef;
@@ -1733,7 +1719,7 @@ __STATIC_INLINE uint32_t LL_TIM_GetAutoReload(TIM_TypeDef *TIMx)
   *       whether or not a timer instance supports a repetition counter.
   * @rmtoll RCR          REP           LL_TIM_SetRepetitionCounter
   * @param  TIMx Timer instance
-  * @param  RepetitionCounter between Min_Data=0 and Max_Data=255
+  * @param  RepetitionCounter between Min_Data=0 and Max_Data=255 or 65535 for advanced timer.
   * @retval None
   */
 __STATIC_INLINE void LL_TIM_SetRepetitionCounter(TIM_TypeDef *TIMx, uint32_t RepetitionCounter)
@@ -1775,6 +1761,16 @@ __STATIC_INLINE void LL_TIM_EnableUIFRemap(TIM_TypeDef *TIMx)
 __STATIC_INLINE void LL_TIM_DisableUIFRemap(TIM_TypeDef *TIMx)
 {
   CLEAR_BIT(TIMx->CR1, TIM_CR1_UIFREMAP);
+}
+
+/**
+  * @brief  Indicate whether update interrupt flag (UIF) copy is set.
+  * @param  Counter Counter value
+  * @retval State of bit (1 or 0).
+  */
+__STATIC_INLINE uint32_t LL_TIM_IsActiveUIFCPY(uint32_t Counter)
+{
+  return (((Counter & TIM_CNT_UIFCPY) == (TIM_CNT_UIFCPY)) ? 1UL : 0UL);
 }
 
 /**
@@ -3838,6 +3834,89 @@ __STATIC_INLINE void LL_TIM_ConfigDMABurst(TIM_TypeDef *TIMx, uint32_t DMABurstB
   * @brief  Remap TIM inputs (input channel, internal/external triggers).
   * @note Macro IS_TIM_REMAP_INSTANCE(TIMx) can be used to check whether or not
   *       a some timer inputs can be remapped.
+  * @rmtoll TIM1_OR1    ETR_ADC1_RMP      LL_TIM_SetRemap\n
+  *         TIM1_OR1    TI1_RMP           LL_TIM_SetRemap\n
+  *         TIM2_OR1    ITR1_RMP          LL_TIM_SetRemap\n
+  *         TIM2_OR1    ETR1_RMP          LL_TIM_SetRemap\n
+  *         TIM2_OR1    TI4_RMP           LL_TIM_SetRemap\n
+  *         TIM3_OR1    TI1_RMP           LL_TIM_SetRemap\n
+  *         TIM8_OR1    TI1_RMP           LL_TIM_SetRemap\n
+  *         TIM15_OR1   TI1_RMP           LL_TIM_SetRemap\n
+  *         TIM15_OR1   ENCODER_MODE      LL_TIM_SetRemap\n
+  *         TIM16_OR1   TI1_RMP           LL_TIM_SetRemap\n
+  *         TIM17_OR1   TI1_RMP           LL_TIM_SetRemap
+  * @param  TIMx Timer instance
+  * @param  Remap Remap param depends on the TIMx. Description available only
+  *         in CHM version of the User Manual (not in .pdf).
+  *         Otherwise see Reference Manual description of OR1 registers.
+  *
+  *         Below description summarizes "Timer Instance" and "Remap" param combinations:
+  *
+  *         TIM1: any combination of TI1_RMP, ETR_ADC1_RMP where
+  *
+  *            . . TI1_RMP can be one of the following values
+  *            @arg @ref LL_TIM_TIM1_TI1_RMP_GPIO
+  *            @arg @ref LL_TIM_TIM1_TI1_RMP_COMP1
+  *
+  *            . . ETR_ADC1_RMP can be one of the following values
+  *            @arg @ref LL_TIM_TIM1_ETR_ADC1_RMP_NC
+  *            @arg @ref LL_TIM_TIM1_ETR_ADC1_RMP_AWD1
+  *            @arg @ref LL_TIM_TIM1_ETR_ADC1_RMP_AWD2
+  *            @arg @ref LL_TIM_TIM1_ETR_ADC1_RMP_AWD3
+  *
+  *         TIM2: any combination of ITR1_RMP, ETR1_RMP, TI4_RMP where
+  *
+  *            . . ITR1_RMP can be one of the following values
+  *            @arg @ref LL_TIM_TIM2_ITR1_RMP_TIM8_TRGO
+  *            @arg @ref LL_TIM_TIM2_ITR1_RMP_OTG_FS_SOF
+  *
+  *            . . ETR1_RMP can be one of the following values
+  *            @arg @ref LL_TIM_TIM2_ETR_RMP_GPIO
+  *            @arg @ref LL_TIM_TIM2_ETR_RMP_LSE
+  *
+  *            TI4_RMP can be one of the following values
+  *            @arg @ref LL_TIM_TIM2_TI4_RMP_GPIO
+  *            @arg @ref LL_TIM_TIM2_TI4_RMP_COMP1
+  *            @arg @ref LL_TIM_TIM2_TI4_RMP_COMP2
+  *            @arg @ref LL_TIM_TIM2_TI4_RMP_COMP1_COMP2
+  *
+  *         TIM3: one of the following values
+  *
+  *            @arg @ref LL_TIM_TIM3_TI1_RMP_GPIO
+  *            @arg @ref LL_TIM_TIM3_TI1_RMP_COMP1
+  *            @arg @ref LL_TIM_TIM3_TI1_RMP_COMP2
+  *            @arg @ref LL_TIM_TIM3_TI1_RMP_COMP1_COMP2
+  *
+  *         TIM8: one of the following values
+  *
+  *            @arg @ref LL_TIM_TIM8_TI1_RMP_GPIO
+  *            @arg @ref LL_TIM_TIM8_TI1_RMP_COMP2
+  *
+  *         TIM15: any combination of TI1_RMP, ENCODER_MODE where
+  *
+  *            . . TI1_RMP can be one of the following values
+  *            @arg @ref LL_TIM_TIM15_TI1_RMP_GPIO
+  *            @arg @ref LL_TIM_TIM15_TI1_RMP_LSE
+  *
+  *            . . ENCODER_MODE can be one of the following values
+  *            @arg @ref LL_TIM_TIM15_ENCODERMODE_NOREDIRECTION
+  *            @arg @ref LL_TIM_TIM15_ENCODERMODE_TIM2
+  *            @arg @ref LL_TIM_TIM15_ENCODERMODE_TIM3
+  *            @arg @ref LL_TIM_TIM15_ENCODERMODE_TIM4
+  *
+  *         TIM16: one of the following values
+  *
+  *            @arg @ref LL_TIM_TIM16_TI1_RMP_GPIO
+  *            @arg @ref LL_TIM_TIM16_TI1_RMP_LSI
+  *            @arg @ref LL_TIM_TIM16_TI1_RMP_LSE
+  *            @arg @ref LL_TIM_TIM16_TI1_RMP_RTC
+  *
+  *         TIM17: one of the following values
+  *
+  *            @arg @ref LL_TIM_TIM17_TI1_RMP_GPIO
+  *            @arg @ref LL_TIM_TIM17_TI1_RMP_MSI
+  *            @arg @ref LL_TIM_TIM17_TI1_RMP_HSE_32
+  *            @arg @ref LL_TIM_TIM17_TI1_RMP_MCO
   * @retval None
   */
 __STATIC_INLINE void LL_TIM_SetRemap(TIM_TypeDef *TIMx, uint32_t Remap)
@@ -4864,5 +4943,5 @@ ErrorStatus LL_TIM_BDTR_Init(TIM_TypeDef *TIMx, LL_TIM_BDTR_InitTypeDef *TIM_BDT
 }
 #endif
 
-#endif /* STM32L5xx_LL_TIM_H */
+#endif /* __STM32L5xx_LL_TIM_H */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -94,9 +94,6 @@ typedef struct
   uint32_t WMHDPEndPage;     /*!< End page of the secure hide protection (used for OPTIONBYTE_WMSEC).
                                   This parameter must be a value between WMSecStartPage and WMPCROPStartPage
                                   (if PCROP area activated) or WMSecEndPage */
-  uint32_t WMPCROPStartPage; /*!< Start page of PCROP area (used for OPTIONBYTE_WMSEC).
-                                  This parameter must be a value between WMSecStartPage or WMHDPEndPage
-                                  (if secure hide protection activated) and WMSecEndPage */
   uint32_t BootLock;           /*!< Configuration of the boot lock (used for OPTIONBYTE_BOOT_LOCK).
                                   This parameter must be a value of @ref FLASH_OB_BOOT_LOCK */
 #endif
@@ -141,14 +138,12 @@ typedef struct
 #define FLASH_FLAG_SIZERR    FLASH_SECSR_SECSIZERR                /*!< FLASH Size error flag */
 #define FLASH_FLAG_PGSERR    FLASH_SECSR_SECPGSERR                /*!< FLASH Programming sequence error flag */
 #define FLASH_FLAG_OPTWERR   FLASH_NSSR_OPTWERR                   /*!< FLASH Option modification error flag  */
-#define FLASH_FLAG_RDERR     FLASH_SECSR_SECRDERR                 /*!< FLASH PCROP read error flag */
 #define FLASH_FLAG_BSY       FLASH_SECSR_SECBSY                   /*!< FLASH Busy flag */
 #define FLASH_FLAG_ECCC      (FLASH_ECCR_ECCC | FLASH_ECCR_ECCC2) /*!< FLASH ECC correction */
 #define FLASH_FLAG_ECCD      (FLASH_ECCR_ECCD | FLASH_ECCR_ECCD2) /*!< FLASH ECC detection */
 
 #define FLASH_FLAG_SR_ERRORS    (FLASH_FLAG_OPERR  | FLASH_FLAG_PROGERR | FLASH_FLAG_WRPERR | \
-                                 FLASH_FLAG_PGAERR | FLASH_FLAG_SIZERR  | FLASH_FLAG_PGSERR | \
-                                 FLASH_FLAG_RDERR)
+                                 FLASH_FLAG_PGAERR | FLASH_FLAG_SIZERR  | FLASH_FLAG_PGSERR)
 #define FLASH_FLAG_ECCR_ERRORS  (FLASH_FLAG_ECCD | FLASH_FLAG_ECCC)
 #define FLASH_FLAG_ALL_ERRORS   (FLASH_FLAG_SR_ERRORS | FLASH_FLAG_OPTWERR | FLASH_FLAG_ECCR_ERRORS)
 #else
@@ -181,7 +176,6 @@ typedef struct
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
 #define FLASH_IT_EOP     FLASH_SECCR_SECEOPIE     /*!< End of FLASH Operation Interrupt source */
 #define FLASH_IT_OPERR   FLASH_SECCR_SECERRIE     /*!< Error Interrupt source */
-#define FLASH_IT_RDERR   FLASH_SECCR_SECRDERRIE   /*!< PCROP Read Error Interrupt source */
 #define FLASH_IT_ECCC    (FLASH_ECCR_ECCIE >> 24) /*!< ECC Correction Interrupt source */
 #else
 #define FLASH_IT_EOP     FLASH_NSCR_NSEOPIE       /*!< End of FLASH Operation Interrupt source */
@@ -203,7 +197,6 @@ typedef struct
 #define HAL_FLASH_ERROR_SIZ    FLASH_FLAG_SIZERR
 #define HAL_FLASH_ERROR_PGS    FLASH_FLAG_PGSERR
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-#define HAL_FLASH_ERROR_RD     FLASH_FLAG_RDERR
 #else
 #define HAL_FLASH_ERROR_OPTW   FLASH_FLAG_OPTWERR
 #endif
@@ -216,8 +209,15 @@ typedef struct
 /** @defgroup FLASH_Type_Erase FLASH Erase Type
   * @{
   */
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#define FLASH_TYPEERASE_PAGES        FLASH_SECCR_SECPER                                                /*!<Secure pages erase only*/
+#define FLASH_TYPEERASE_PAGES_NS     (FLASH_NSCR_NSPER    | FLASH_NON_SECURE_MASK)                     /*!<Non-secure pages erase only*/
+#define FLASH_TYPEERASE_MASSERASE    (FLASH_SECCR_SECMER1 | FLASH_SECCR_SECMER2)                       /*!<Secure flash mass erase activation*/
+#define FLASH_TYPEERASE_MASSERASE_NS (FLASH_NSCR_NSMER1   | FLASH_NSCR_NSMER2 | FLASH_NON_SECURE_MASK) /*!<Non-secure flash mass erase activation*/
+#else
 #define FLASH_TYPEERASE_PAGES       FLASH_NSCR_NSPER                            /*!<Pages erase only*/
 #define FLASH_TYPEERASE_MASSERASE   (FLASH_NSCR_NSMER1 | FLASH_NSCR_NSMER2)     /*!<Flash mass erase activation*/
+#endif
 /**
   * @}
   */
@@ -235,7 +235,12 @@ typedef struct
 /** @defgroup FLASH_Type_Program FLASH Program Type
   * @{
   */
-#define FLASH_TYPEPROGRAM_DOUBLEWORD   FLASH_NSCR_NSPG   /*!<Program a double-word (64-bit) at a specified address.*/
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#define FLASH_TYPEPROGRAM_DOUBLEWORD    FLASH_SECCR_SECPG                         /*!<Program a double-word (64-bit) at a specified secure address.*/
+#define FLASH_TYPEPROGRAM_DOUBLEWORD_NS (FLASH_NSCR_NSPG | FLASH_NON_SECURE_MASK) /*!<Program a double-word (64-bit) at a specified non-secure address.*/
+#else
+#define FLASH_TYPEPROGRAM_DOUBLEWORD    FLASH_NSCR_NSPG                           /*!<Program a double-word (64-bit) at a specified address.*/
+#endif
 /**
   * @}
   */
@@ -476,11 +481,8 @@ typedef struct
 
 #define OB_WMSEC_SECURE_AREA_CONFIG    0x00000010U  /*!< Configure Watermarked-based security area       */
 #define OB_WMSEC_HDP_AREA_CONFIG       0x00000020U  /*!< Configure Watermarked-based secure hide area    */
-#define OB_WMSEC_PCROP_AREA_CONFIG     0x00000040U  /*!< Configure Watermarked-based PCROP area          */
 #define OB_WMSEC_HDP_AREA_ENABLE       0x00000080U  /*!< Enable Watermarked-based secure hide area       */
 #define OB_WMSEC_HDP_AREA_DISABLE      0x00000100U  /*!< Disable Watermarked-based secure hide area      */
-#define OB_WMSEC_PCROP_AREA_ENABLE     0x00000200U  /*!< Enable Watermarked-based PCROP area             */
-#define OB_WMSEC_PCROP_AREA_DISABLE    0x00000400U  /*!< Disable Watermarked-based PCROP area            */
 /**
   * @}
   */
@@ -555,7 +557,7 @@ typedef struct
 
 /**
   * @brief  Set the FLASH Latency.
-  * @param  __LATENCY__: FLASH Latency
+  * @param  __LATENCY__ FLASH Latency.
   *         This parameter can be one of the following values :
   *     @arg FLASH_LATENCY_0: FLASH Zero wait state
   *     @arg FLASH_LATENCY_1: FLASH One wait state
@@ -643,47 +645,57 @@ typedef struct
 
 /**
   * @brief  Enable the specified FLASH interrupt.
-  * @param  __INTERRUPT__: FLASH interrupt
+  * @param  __INTERRUPT__ FLASH interrupt.
   *         This parameter can be any combination of the following values:
   *     @arg FLASH_IT_EOP: End of FLASH Operation Interrupt
   *     @arg FLASH_IT_OPERR: Error Interrupt
-  *     @arg FLASH_IT_RDERR: PCROP Read Error Interrupt (Only in secure)
   *     @arg FLASH_IT_ECCC: ECC Correction Interrupt
   * @retval none
   */
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+/* Enable secure FLASH interrupts from the secure world */
 #define __HAL_FLASH_ENABLE_IT(__INTERRUPT__)    do { if(((__INTERRUPT__) & FLASH_IT_ECCC) != 0U) { SET_BIT(FLASH->ECCR, FLASH_ECCR_ECCIE); }\
                                                      if(((__INTERRUPT__) & (~FLASH_IT_ECCC)) != 0U) { SET_BIT(FLASH->SECCR, ((__INTERRUPT__) & (~FLASH_IT_ECCC))); }\
                                                    } while(0)
+/* Enable non-secure FLASH interrupts from the secure world */
+#define __HAL_FLASH_ENABLE_IT_NS(__INTERRUPT__) do { if(((__INTERRUPT__) & FLASH_IT_ECCC) != 0U) { SET_BIT(FLASH->ECCR, FLASH_ECCR_ECCIE); }\
+                                                     if(((__INTERRUPT__) & (~FLASH_IT_ECCC)) != 0U) { SET_BIT(FLASH->NSCR, ((__INTERRUPT__) & (~FLASH_IT_ECCC))); }\
+                                                   } while(0)
 #else
+/* Enable non-secure FLASH interrupts from the non-secure world */
 #define __HAL_FLASH_ENABLE_IT(__INTERRUPT__)    do { if(((__INTERRUPT__) & FLASH_IT_ECCC) != 0U) { SET_BIT(FLASH->ECCR, FLASH_ECCR_ECCIE); }\
                                                      if(((__INTERRUPT__) & (~FLASH_IT_ECCC)) != 0U) { SET_BIT(FLASH->NSCR, ((__INTERRUPT__) & (~FLASH_IT_ECCC))); }\
                                                    } while(0)
-#endif
+#endif /* __ARM_FEATURE_CMSE */
 
 /**
   * @brief  Disable the specified FLASH interrupt.
-  * @param  __INTERRUPT__: FLASH interrupt
+  * @param  __INTERRUPT__ FLASH interrupt.
   *         This parameter can be any combination of the following values:
   *     @arg FLASH_IT_EOP: End of FLASH Operation Interrupt
   *     @arg FLASH_IT_OPERR: Error Interrupt
-  *     @arg FLASH_IT_RDERR: PCROP Read Error Interrupt (Only in secure)
   *     @arg FLASH_IT_ECCC: ECC Correction Interrupt
   * @retval none
   */
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-#define __HAL_FLASH_DISABLE_IT(__INTERRUPT__)   do { if(((__INTERRUPT__) & FLASH_IT_ECCC) != 0U) { CLEAR_BIT(FLASH->ECCR, FLASH_ECCR_ECCIE); }\
-                                                     if(((__INTERRUPT__) & (~FLASH_IT_ECCC)) != 0U) { CLEAR_BIT(FLASH->SECCR, ((__INTERRUPT__) & (~FLASH_IT_ECCC))); }\
-                                                   } while(0)
+/* Disable secure FLASH interrupts from the secure world */
+#define __HAL_FLASH_DISABLE_IT(__INTERRUPT__)    do { if(((__INTERRUPT__) & FLASH_IT_ECCC) != 0U) { CLEAR_BIT(FLASH->ECCR, FLASH_ECCR_ECCIE); }\
+                                                      if(((__INTERRUPT__) & (~FLASH_IT_ECCC)) != 0U) { CLEAR_BIT(FLASH->SECCR, ((__INTERRUPT__) & (~FLASH_IT_ECCC))); }\
+                                                    } while(0)
+/* Disable non-secure FLASH interrupts from the secure world */
+#define __HAL_FLASH_DISABLE_IT_NS(__INTERRUPT__) do { if(((__INTERRUPT__) & FLASH_IT_ECCC) != 0U) { CLEAR_BIT(FLASH->ECCR, FLASH_ECCR_ECCIE); }\
+                                                      if(((__INTERRUPT__) & (~FLASH_IT_ECCC)) != 0U) { CLEAR_BIT(FLASH->NSCR, ((__INTERRUPT__) & (~FLASH_IT_ECCC))); }\
+                                                    } while(0)
 #else
-#define __HAL_FLASH_DISABLE_IT(__INTERRUPT__)   do { if(((__INTERRUPT__) & FLASH_IT_ECCC) != 0U) { CLEAR_BIT(FLASH->ECCR, FLASH_ECCR_ECCIE); }\
-                                                     if(((__INTERRUPT__) & (~FLASH_IT_ECCC)) != 0U) { CLEAR_BIT(FLASH->NSCR, ((__INTERRUPT__) & (~FLASH_IT_ECCC))); }\
-                                                   } while(0)
-#endif
+/* Disable non-secure FLASH interrupts from the non-secure world */
+#define __HAL_FLASH_DISABLE_IT(__INTERRUPT__)    do { if(((__INTERRUPT__) & FLASH_IT_ECCC) != 0U) { CLEAR_BIT(FLASH->ECCR, FLASH_ECCR_ECCIE); }\
+                                                      if(((__INTERRUPT__) & (~FLASH_IT_ECCC)) != 0U) { CLEAR_BIT(FLASH->NSCR, ((__INTERRUPT__) & (~FLASH_IT_ECCC))); }\
+                                                    } while(0)
+#endif /* __ARM_FEATURE_CMSE */
 
 /**
   * @brief  Check whether the specified FLASH flag is set or not.
-  * @param  __FLAG__: specifies the FLASH flag to check.
+  * @param  __FLAG__ specifies the FLASH flag to check.
   *   This parameter can be one of the following values:
   *     @arg FLASH_FLAG_EOP: FLASH End of Operation flag
   *     @arg FLASH_FLAG_OPERR: FLASH Operation error flag
@@ -693,27 +705,32 @@ typedef struct
   *     @arg FLASH_FLAG_SIZERR: FLASH Size error flag
   *     @arg FLASH_FLAG_PGSERR: FLASH Programming sequence error flag
   *     @arg FLASH_FLAG_OPTWERR: FLASH Option modification error flag
-  *     @arg FLASH_FLAG_RDERR: FLASH PCROP read  error flag (Only in secure)
   *     @arg FLASH_FLAG_BSY: FLASH write/erase operations in progress flag
   *     @arg FLASH_FLAG_ECCC: FLASH one ECC error has been detected and corrected
   *     @arg FLASH_FLAG_ECCD: FLASH two ECC errors have been detected
   * @retval The new state of FLASH_FLAG (SET or RESET).
   */
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+/* Get secure FLASH flags from the secure world */
 #define __HAL_FLASH_GET_FLAG(__FLAG__)          ((((__FLAG__) & FLASH_FLAG_ECCR_ERRORS) != 0U) ? \
-                                                 (READ_BIT(FLASH->ECCR, (__FLAG__)) == (__FLAG__))  : \
+                                                 (READ_BIT(FLASH->ECCR, (__FLAG__)) == (__FLAG__)) : \
                                                  ((((__FLAG__) & (FLASH_FLAG_OPTWERR)) != 0U) ? \
-                                                   (READ_BIT(FLASH->NSSR, (__FLAG__)) == (__FLAG__)) : \
-                                                   (READ_BIT(FLASH->SECSR, (__FLAG__)) == (__FLAG__))))
-#else
-#define __HAL_FLASH_GET_FLAG(__FLAG__)          ((((__FLAG__) & FLASH_FLAG_ECCR_ERRORS) != 0U) ? \
-                                                 (READ_BIT(FLASH->ECCR, (__FLAG__)) == (__FLAG__))  : \
+                                                  (READ_BIT(FLASH->NSSR, (__FLAG__)) == (__FLAG__)) : \
+                                                  (READ_BIT(FLASH->SECSR, (__FLAG__)) == (__FLAG__))))
+/* Get non-secure FLASH flags from the secure world */
+#define __HAL_FLASH_GET_FLAG_NS(__FLAG__)       ((((__FLAG__) & FLASH_FLAG_ECCR_ERRORS) != 0U) ? \
+                                                 (READ_BIT(FLASH->ECCR, (__FLAG__)) == (__FLAG__)) : \
                                                  (READ_BIT(FLASH->NSSR, (__FLAG__)) == (__FLAG__)))
-#endif
+#else
+/* Get non-secure FLASH flags from the non-secure world */
+#define __HAL_FLASH_GET_FLAG(__FLAG__)          ((((__FLAG__) & FLASH_FLAG_ECCR_ERRORS) != 0U) ? \
+                                                 (READ_BIT(FLASH->ECCR, (__FLAG__)) == (__FLAG__)) : \
+                                                 (READ_BIT(FLASH->NSSR, (__FLAG__)) == (__FLAG__)))
+#endif /* __ARM_FEATURE_CMSE */
 
 /**
   * @brief  Clear the FLASH's pending flags.
-  * @param  __FLAG__: specifies the FLASH flags to clear.
+  * @param  __FLAG__ specifies the FLASH flags to clear.
   *   This parameter can be any combination of the following values:
   *     @arg FLASH_FLAG_EOP: FLASH End of Operation flag
   *     @arg FLASH_FLAG_OPERR: FLASH Operation error flag
@@ -723,22 +740,27 @@ typedef struct
   *     @arg FLASH_FLAG_SIZERR: FLASH Size error flag
   *     @arg FLASH_FLAG_PGSERR: FLASH Programming sequence error flag
   *     @arg FLASH_FLAG_OPTWERR: FLASH Option modification error flag (Only in non-secure)
-  *     @arg FLASH_FLAG_RDERR: FLASH PCROP read  error flag (Only in secure)
   *     @arg FLASH_FLAG_ECCC: FLASH one ECC error has been detected and corrected
   *     @arg FLASH_FLAG_ECCD: FLASH two ECC errors have been detected
   *     @arg FLASH_FLAG_ALL_ERRORS: FLASH All errors flags
   * @retval None
   */
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+/* Clear secure FLASH flags from the secure world */
 #define __HAL_FLASH_CLEAR_FLAG(__FLAG__)        do { if(((__FLAG__) & FLASH_FLAG_ECCR_ERRORS) != 0U) { SET_BIT(FLASH->ECCR, ((__FLAG__) & FLASH_FLAG_ECCR_ERRORS)); }\
-                                                     if(((__FLAG__) & (FLASH_FLAG_OPTWERR)) != 0U) { SET_BIT(FLASH->NSSR, ((__FLAG__) & (FLASH_FLAG_OPTWERR))); }\
+                                                     if(((__FLAG__) & FLASH_FLAG_OPTWERR) != 0U) { SET_BIT(FLASH->NSSR, ((__FLAG__) & (FLASH_FLAG_OPTWERR))); }\
                                                      if(((__FLAG__) & ~(FLASH_FLAG_ECCR_ERRORS | FLASH_FLAG_OPTWERR)) != 0U) { WRITE_REG(FLASH->SECSR, ((__FLAG__) & ~(FLASH_FLAG_ECCR_ERRORS | FLASH_FLAG_OPTWERR))); } \
                                                    } while(0)
+/* Clear non-secure FLASH flags from the secure world */
+#define __HAL_FLASH_CLEAR_FLAG_NS(__FLAG__)     do { if(((__FLAG__) & FLASH_FLAG_ECCR_ERRORS) != 0U) { SET_BIT(FLASH->ECCR, ((__FLAG__) & FLASH_FLAG_ECCR_ERRORS)); }\
+                                                     if(((__FLAG__) & ~(FLASH_FLAG_ECCR_ERRORS)) != 0U) { WRITE_REG(FLASH->NSSR, ((__FLAG__) & ~(FLASH_FLAG_ECCR_ERRORS))); }\
+                                                   } while(0)
 #else
+/* Clear non-secure FLASH flags from the non-secure world */
 #define __HAL_FLASH_CLEAR_FLAG(__FLAG__)        do { if(((__FLAG__) & FLASH_FLAG_ECCR_ERRORS) != 0U) { SET_BIT(FLASH->ECCR, ((__FLAG__) & FLASH_FLAG_ECCR_ERRORS)); }\
                                                      if(((__FLAG__) & ~(FLASH_FLAG_ECCR_ERRORS)) != 0U) { WRITE_REG(FLASH->NSSR, ((__FLAG__) & ~(FLASH_FLAG_ECCR_ERRORS))); }\
                                                    } while(0)
-#endif
+#endif /* __ARM_FEATURE_CMSE */
 /**
   * @}
   */
@@ -816,12 +838,6 @@ HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout);
 /** @defgroup FLASH_Private_Constants FLASH Private Constants
   * @{
   */
-#define FLASH_SIZE_DATA_REGISTER 0x1FFF75E0U
-
-/*#define FLASH_SIZE               ((((*((uint16_t *)FLASH_SIZE_DATA_REGISTER)) == 0xFFFFU)) ? 0x80000U : \
-                                  (((*((uint16_t *)FLASH_SIZE_DATA_REGISTER)) & (0x0FFFU)) << 10U))*/
-#define FLASH_SIZE               0x80000U
-
 #define FLASH_BANK_SIZE          (FLASH_SIZE >> 1)
 
 #define FLASH_PAGE_SIZE          0x00000800U
@@ -829,6 +845,7 @@ HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout);
 
 #define FLASH_TIMEOUT_VALUE      1000u /* 1 s */
 
+#define FLASH_NON_SECURE_MASK    0x80000000U
 /**
   * @}
   */
@@ -838,8 +855,15 @@ HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout);
  *  @{
  */
 
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#define IS_FLASH_TYPEERASE(VALUE)          (((VALUE) == FLASH_TYPEERASE_PAGES)     || \
+                                            ((VALUE) == FLASH_TYPEERASE_PAGES_NS)  || \
+                                            ((VALUE) == FLASH_TYPEERASE_MASSERASE) || \
+                                            ((VALUE) == FLASH_TYPEERASE_MASSERASE_NS))
+#else
 #define IS_FLASH_TYPEERASE(VALUE)          (((VALUE) == FLASH_TYPEERASE_PAGES) || \
                                             ((VALUE) == FLASH_TYPEERASE_MASSERASE))
+#endif
 
 #define IS_FLASH_BANK(BANK)                (((BANK) == FLASH_BANK_1)  || \
                                             ((BANK) == FLASH_BANK_2)  || \
@@ -848,11 +872,21 @@ HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout);
 #define IS_FLASH_BANK_EXCLUSIVE(BANK)      (((BANK) == FLASH_BANK_1)  || \
                                             ((BANK) == FLASH_BANK_2))
 
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#define IS_FLASH_TYPEPROGRAM(VALUE)        (((VALUE) == FLASH_TYPEPROGRAM_DOUBLEWORD) || \
+                                            ((VALUE) == FLASH_TYPEPROGRAM_DOUBLEWORD_NS))
+#else
 #define IS_FLASH_TYPEPROGRAM(VALUE)        ((VALUE) == FLASH_TYPEPROGRAM_DOUBLEWORD)
+#endif
 
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#define IS_FLASH_MAIN_MEM_ADDRESS(ADDRESS) ((((ADDRESS) >= FLASH_BASE)    && ((ADDRESS) < (FLASH_BASE+FLASH_SIZE))) || \
+                                            (((ADDRESS) >= FLASH_BASE_NS) && ((ADDRESS) < (FLASH_BASE_NS+FLASH_SIZE))))
+#else
 #define IS_FLASH_MAIN_MEM_ADDRESS(ADDRESS) (((ADDRESS) >= FLASH_BASE) && ((ADDRESS) < (FLASH_BASE+FLASH_SIZE)))
+#endif
 
-#define IS_FLASH_OTP_ADDRESS(ADDRESS)      (((ADDRESS) >= 0x1FFF7000U) && ((ADDRESS) <= 0x1FFF73FFU))
+#define IS_FLASH_OTP_ADDRESS(ADDRESS)      (((ADDRESS) >= OTP_BASE) && ((ADDRESS) < (OTP_BASE+OTP_SIZE)))
 
 #define IS_FLASH_PROGRAM_ADDRESS(ADDRESS)  ((IS_FLASH_MAIN_MEM_ADDRESS(ADDRESS)) || (IS_FLASH_OTP_ADDRESS(ADDRESS)))
 
@@ -915,7 +949,7 @@ HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout);
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
 #define IS_OB_BOOT_LOCK(VALUE)             (((VALUE) == OB_BOOT_LOCK_DISABLE) || ((VALUE) == OB_BOOT_LOCK_ENABLE))
 
-#define IS_OB_WMSEC_CONFIG(CFG)            ((((CFG) & 0x7F3U) != 0U) && (((CFG) & 0x3U) != 0U) && (((CFG) & 0xFFFFF80CU) == 0U))
+#define IS_OB_WMSEC_CONFIG(CFG)            ((((CFG) & 0x1B3U) != 0U) && (((CFG) & 0x3U) != 0U) && (((CFG) & 0xFFFFFE4CU) == 0U))
 
 #define IS_OB_WMSEC_AREA_EXCLUSIVE(WMSEC)  (((((WMSEC) & OB_WMSEC_AREA1) != 0U) && (((WMSEC) & OB_WMSEC_AREA2) == 0U)) || \
                                             ((((WMSEC) & OB_WMSEC_AREA2) != 0U) && (((WMSEC) & OB_WMSEC_AREA1) == 0U)))
@@ -936,6 +970,12 @@ HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout);
                                             ((LATENCY) == FLASH_LATENCY_10) || ((LATENCY) == FLASH_LATENCY_11) || \
                                             ((LATENCY) == FLASH_LATENCY_12) || ((LATENCY) == FLASH_LATENCY_13) || \
                                             ((LATENCY) == FLASH_LATENCY_14) || ((LATENCY) == FLASH_LATENCY_15))
+
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#define IS_FLASH_SECURE_OPERATION()        ((pFlash.ProcedureOnGoing & FLASH_NON_SECURE_MASK) == 0U)
+#else
+#define IS_FLASH_SECURE_OPERATION()        (0U)
+#endif /* __ARM_FEATURE_CMSE */
 /**
   * @}
   */

@@ -45,20 +45,16 @@
 /**
   * @brief  FLASH Block-based security structure definition
   */
+#define FLASH_BLOCKBASED_NB_REG (4U)
+
 typedef struct
 {
-  uint32_t Bank;             /*!< Configuration of the associated bank of Block-based Secure Area.
-                                  This parameter must be a value of @ref FLASH_Banks */
-  uint32_t BBAttributesType; /*!< Block-Based Attributes type.
-                                  This parameter must be a value of @ref FLASH_BB_Attributes */     
-  uint32_t BBReg1;           /*!< Page attribute for pages 0 to 31.
-                                  This parameter is a bit field and has a value between 0x0 and 0xFFFFFFFF */
-  uint32_t BBReg2;           /*!< Page attribute for pages 32 to 63.
-                                  This parameter is a bit field and has a value between 0x0 and 0xFFFFFFFF */
-  uint32_t BBReg3;           /*!< Page attribute for pages 64 to 95.
-                                  This parameter is a bit field and has a value between 0x0 and 0xFFFFFFFF */
-  uint32_t BBReg4;           /*!< Page attribute for pages 96 to 127.
-                                  This parameter is a bit field and has a value between 0x0 and 0xFFFFFFFF */
+  uint32_t Bank;                                        /*!< Configuration of the associated bank of Block-based Secure Area.
+                                                            This parameter must be a value of @ref FLASH_Banks */
+  uint32_t BBAttributesType;                            /*!< Block-Based Attributes type.
+                                                             This parameter must be a value of @ref FLASH_BB_Attributes */     
+  uint32_t BBAttributes_array[FLASH_BLOCKBASED_NB_REG]; /*!< Each bit specifies the block-based attribute configuration of a page.
+                                                             0 means non-secure, 1 means secure */
 } FLASH_BBAttributesTypeDef;
 /**
   * @}
@@ -125,8 +121,8 @@ HAL_StatusTypeDef HAL_FLASHEx_Erase_IT(FLASH_EraseInitTypeDef *pEraseInit);
 HAL_StatusTypeDef HAL_FLASHEx_OBProgram(FLASH_OBProgramInitTypeDef *pOBInit);
 void              HAL_FLASHEx_OBGetConfig(FLASH_OBProgramInitTypeDef *pOBInit);
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-HAL_StatusTypeDef HAL_FLASHEx_ConfigBBAttributes(FLASH_BBAttributesTypeDef *pBBSecInit);
-void              HAL_FLASHEx_GetConfigBBAttributes(FLASH_BBAttributesTypeDef *pBBSecInit);
+HAL_StatusTypeDef HAL_FLASHEx_ConfigBBAttributes(FLASH_BBAttributesTypeDef *pBBAttributes);
+void              HAL_FLASHEx_GetConfigBBAttributes(FLASH_BBAttributesTypeDef *pBBAttributes);
 void              HAL_FLASHEx_EnableSecHideProtection(uint32_t Banks);
 #endif
 /**
@@ -139,7 +135,7 @@ void              HAL_FLASHEx_EnableSecHideProtection(uint32_t Banks);
 void              HAL_FLASHEx_ConfigPrivMode(uint32_t PrivMode);
 uint32_t          HAL_FLASHEx_GetPrivMode(void);
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-HAL_StatusTypeDef HAL_FLASHEx_ConfigSecInversion(uint32_t Cfg);
+HAL_StatusTypeDef HAL_FLASHEx_ConfigSecInversion(uint32_t SecInvState);
 uint32_t          HAL_FLASHEx_GetSecInversion(void);
 #endif
 HAL_StatusTypeDef HAL_FLASHEx_ConfigLVEPin(uint32_t ConfigLVE);

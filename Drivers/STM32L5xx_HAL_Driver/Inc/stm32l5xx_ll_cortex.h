@@ -106,7 +106,7 @@ extern "C" {
   */
 __STATIC_INLINE uint32_t LL_SYSTICK_IsActiveCounterFlag(void)
 {
-  return ((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == (SysTick_CTRL_COUNTFLAG_Msk));
+  return (((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == (SysTick_CTRL_COUNTFLAG_Msk)) ? 1UL : 0UL);
 }
 
 /**
@@ -168,7 +168,7 @@ __STATIC_INLINE void LL_SYSTICK_DisableIT(void)
   */
 __STATIC_INLINE uint32_t LL_SYSTICK_IsEnabledIT(void)
 {
-  return (READ_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk) == (SysTick_CTRL_TICKINT_Msk));
+  return ((READ_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk) == (SysTick_CTRL_TICKINT_Msk)) ? 1UL : 0UL);
 }
 
 /**

@@ -58,7 +58,14 @@ extern "C" {
 /** @defgroup SYSTEM_LL_Private_Constants SYSTEM Private Constants
   * @{
   */
-
+/**
+ * @brief VREFBUF VREF_SC0 & VREF_SC1 calibration values 
+ */
+#define VREFBUF_SC0_CAL_ADDR   ((uint8_t*) (0x0BFA0579UL)) /*!<  Address of VREFBUF trimming value for VRS=0,
+                                                                 VREF_SC0 in STM32L5 datasheet */
+#define VREFBUF_SC1_CAL_ADDR   ((uint8_t*) (0x0BFA0530UL)) /*!<  Address of VREFBUF trimming value for VRS=1,
+                                                                 VREF_SC1 in STM32L5 datasheet */
+    
 /**
  * @brief Power-down in Run mode Flash key
  */
@@ -208,7 +215,7 @@ extern "C" {
   * @}
   */
 
-/** @defgroup SYSTEM_LL_EC_APB1_GRP1_STOP_IP DBGMCU APB1 GRP1 STOP IP
+/** @defgroup SYSTEM_LL_EC_APB1_GRP1_STOP DBGMCU APB1 GRP1 STOP
   * @{
   */
 #define LL_DBGMCU_APB1_GRP1_TIM2_STOP      DBGMCU_APB1FZR1_DBG_TIM2_STOP   /*!< The counter clock of TIM2 is stopped when the core is halted*/
@@ -229,7 +236,7 @@ extern "C" {
   * @}
   */
 
-/** @defgroup SYSTEM_LL_EC_APB1_GRP2_STOP_IP DBGMCU APB1 GRP2 STOP IP
+/** @defgroup SYSTEM_LL_EC_APB1_GRP2_STOP DBGMCU APB1 GRP2 STOP
   * @{
   */
 #define LL_DBGMCU_APB1_GRP2_I2C4_STOP      DBGMCU_APB1FZR2_DBG_I2C4_STOP   /*!< The I2C4 SMBus timeout is frozen*/
@@ -239,14 +246,14 @@ extern "C" {
   * @}
   */
 
-/** @defgroup SYSTEM_LL_EC_APB2_GRP1_STOP_IP DBGMCU APB2 GRP1 STOP IP
+/** @defgroup SYSTEM_LL_EC_APB2_GRP1_STOP DBGMCU APB2 GRP1 STOP
   * @{
   */
-#define LL_DBGMCU_APB2_GRP1_TIM1_STOP      DBGMCU_APB2FZ_DBG_TIM1_STOP     /*!< The counter clock of TIM1 is stopped when the core is halted*/
-#define LL_DBGMCU_APB2_GRP1_TIM8_STOP      DBGMCU_APB2FZ_DBG_TIM8_STOP     /*!< The counter clock of TIM8 is stopped when the core is halted*/
-#define LL_DBGMCU_APB2_GRP1_TIM15_STOP     DBGMCU_APB2FZ_DBG_TIM15_STOP    /*!< The counter clock of TIM15 is stopped when the core is halted*/
-#define LL_DBGMCU_APB2_GRP1_TIM16_STOP     DBGMCU_APB2FZ_DBG_TIM16_STOP    /*!< The counter clock of TIM16 is stopped when the core is halted*/
-#define LL_DBGMCU_APB2_GRP1_TIM17_STOP     DBGMCU_APB2FZ_DBG_TIM17_STOP    /*!< The counter clock of TIM17 is stopped when the core is halted*/
+#define LL_DBGMCU_APB2_GRP1_TIM1_STOP      DBGMCU_APB2FZR_DBG_TIM1_STOP     /*!< The counter clock of TIM1 is stopped when the core is halted*/
+#define LL_DBGMCU_APB2_GRP1_TIM8_STOP      DBGMCU_APB2FZR_DBG_TIM8_STOP     /*!< The counter clock of TIM8 is stopped when the core is halted*/
+#define LL_DBGMCU_APB2_GRP1_TIM15_STOP     DBGMCU_APB2FZR_DBG_TIM15_STOP    /*!< The counter clock of TIM15 is stopped when the core is halted*/
+#define LL_DBGMCU_APB2_GRP1_TIM16_STOP     DBGMCU_APB2FZR_DBG_TIM16_STOP    /*!< The counter clock of TIM16 is stopped when the core is halted*/
+#define LL_DBGMCU_APB2_GRP1_TIM17_STOP     DBGMCU_APB2FZR_DBG_TIM17_STOP    /*!< The counter clock of TIM17 is stopped when the core is halted*/
 /**
   * @}
   */
@@ -299,6 +306,30 @@ extern "C" {
 /** @defgroup SYSTEM_LL_EF_SYSCFG SYSCFG
   * @{
   */
+
+/**
+  * @brief  Enable I/O analog switches supplied by VDD.
+  * @rmtoll SYSCFG_CFGR1 ANASWVDD      LL_SYSCFG_EnableAnalogSwitchVdd
+  * @retval None
+  */
+__STATIC_INLINE void LL_SYSCFG_EnableAnalogSwitchVdd(void)
+{
+  SET_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_ANASWVDD);
+}
+
+/**
+  * @brief  Disable I/O analog switches supplied by VDD.
+  * @note   I/O analog switches are supplied by VDDA or booster
+  *         when booster in on.
+  *         Dedicated voltage booster (supplied by VDD) is the recommended
+  *         configuration with low VDDA voltage operation.
+  * @rmtoll SYSCFG_CFGR1 ANASWVDD      LL_SYSCFG_DisableAnalogSwitchVdd
+  * @retval None
+  */
+__STATIC_INLINE void LL_SYSCFG_DisableAnalogSwitchVdd(void)
+{
+  CLEAR_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_ANASWVDD);
+}
 
 /**
   * @brief  Enable I/O analog switch voltage booster.
@@ -758,16 +789,16 @@ __STATIC_INLINE void LL_SYSCFG_UnlockSRAM2WRP(void)
 /**
   * @brief  Configure Secure mode
   * @note Only available from secure state when system implements security (TZEN=1)
-  * @rmtoll SECCFGR     SYSCFGSEC     LL_SYSCFG_ConfigSecure\n
-  *         SECCFGR     CLASSBSEC     LL_SYSCFG_ConfigSecure\n
-  *         SECCFGR     SRAM2SEC      LL_SYSCFG_ConfigSecure\n
-  *         SECCFGR     FPUSEC        LL_SYSCFG_ConfigSecure
+  * @rmtoll SYSCFG_SECCFGR SYSCFGSEC    LL_SYSCFG_ConfigSecure\n
+  *         SYSCFG_SECCFGR CLASSBSEC    LL_SYSCFG_ConfigSecure\n
+  *         SYSCFG_SECCFGR SRAM2SEC     LL_SYSCFG_ConfigSecure\n
+  *         SYSCFG_SECCFGR FPUSEC       LL_SYSCFG_ConfigSecure
   * @param  Configuration This parameter shall be the full combination
   *         of the following values:
-  *         @arg @ref LL_SYSCFG_CLOCK_SEC or LL_SYSCFG_CLOCK_NSEC
-  *         @arg @ref LL_SYSCFG_CLASSB_SEC or LL_SYSCFG_CLASSB_NSEC
-  *         @arg @ref LL_SYSCFG_SRAM2_SEC or LL_SYSCFG_SRAM2_NSEC
-  *         @arg @ref LL_SYSCFG_FPU_SEC or LL_SYSCFG_FPU_NSEC
+  *         @arg @ref LL_SYSCFG_CLOCK_SEC or @arg @ref LL_SYSCFG_CLOCK_NSEC
+  *         @arg @ref LL_SYSCFG_CLASSB_SEC or @arg @ref LL_SYSCFG_CLASSB_NSEC
+  *         @arg @ref LL_SYSCFG_SRAM2_SEC or @arg @ref LL_SYSCFG_SRAM2_NSEC
+  *         @arg @ref LL_SYSCFG_FPU_SEC or @arg @ref LL_SYSCFG_FPU_NSEC
   * @retval None
   */
 __STATIC_INLINE void LL_SYSCFG_ConfigSecure(uint32_t Configuration)
@@ -780,15 +811,15 @@ __STATIC_INLINE void LL_SYSCFG_ConfigSecure(uint32_t Configuration)
 /**
   * @brief  Get Secure mode configuration
   * @note Only available when system implements security (TZEN=1)
-  * @rmtoll SECCFGR     SYSCFGSEC     LL_SYSCFG_ConfigSecure\n
-  *         SECCFGR     CLASSBSEC     LL_SYSCFG_ConfigSecure\n
-  *         SECCFGR     SRAM2SEC      LL_SYSCFG_ConfigSecure\n
-  *         SECCFGR     FPUSEC        LL_SYSCFG_ConfigSecure
+  * @rmtoll SYSCFG_SECCFGR SYSCFGSEC    LL_SYSCFG_ConfigSecure\n
+  *         SYSCFG_SECCFGR CLASSBSEC    LL_SYSCFG_ConfigSecure\n
+  *         SYSCFG_SECCFGR SRAM2SEC     LL_SYSCFG_ConfigSecure\n
+  *         SYSCFG_SECCFGR FPUSEC       LL_SYSCFG_ConfigSecure
   * @retval Returned value is the combination of the following values:
-  *         @arg @ref LL_SYSCFG_CLOCK_SEC or LL_SYSCFG_CLOCK_NSEC
-  *         @arg @ref LL_SYSCFG_CLASSB_SEC or LL_SYSCFG_CLASSB_NSEC
-  *         @arg @ref LL_SYSCFG_SRAM2_SEC or LL_SYSCFG_SRAM2_NSEC
-  *         @arg @ref LL_SYSCFG_FPU_SEC or LL_SYSCFG_FPU_NSEC
+  *         @arg @ref LL_SYSCFG_CLOCK_SEC or @arg @ref LL_SYSCFG_CLOCK_NSEC
+  *         @arg @ref LL_SYSCFG_CLASSB_SEC or @arg @ref LL_SYSCFG_CLASSB_NSEC
+  *         @arg @ref LL_SYSCFG_SRAM2_SEC or @arg @ref LL_SYSCFG_SRAM2_NSEC
+  *         @arg @ref LL_SYSCFG_FPU_SEC or @arg @ref LL_SYSCFG_FPU_NSEC
   */
 __STATIC_INLINE uint32_t LL_SYSCFG_GetConfigSecure(void)
 {
@@ -1002,7 +1033,7 @@ __STATIC_INLINE void LL_DBGMCU_APB1_GRP2_UnFreezePeriph(uint32_t Periphs)
 
 /**
   * @brief  Freeze APB2 peripherals
-  * @rmtoll DBGMCU_APB2FZ DBG_TIMx_STOP  LL_DBGMCU_APB2_GRP1_FreezePeriph
+  * @rmtoll DBGMCU_APB2FZR DBG_TIMx_STOP  LL_DBGMCU_APB2_GRP1_FreezePeriph
   * @param  Periphs This parameter can be a combination of the following values:
   *         @arg @ref LL_DBGMCU_APB2_GRP1_TIM1_STOP
   *         @arg @ref LL_DBGMCU_APB2_GRP1_TIM8_STOP
@@ -1013,12 +1044,12 @@ __STATIC_INLINE void LL_DBGMCU_APB1_GRP2_UnFreezePeriph(uint32_t Periphs)
   */
 __STATIC_INLINE void LL_DBGMCU_APB2_GRP1_FreezePeriph(uint32_t Periphs)
 {
-  SET_BIT(DBGMCU->APB2FZ, Periphs);
+  SET_BIT(DBGMCU->APB2FZR, Periphs);
 }
 
 /**
   * @brief  Unfreeze APB2 peripherals
-  * @rmtoll DBGMCU_APB2FZ DBG_TIMx_STOP  LL_DBGMCU_APB2_GRP1_UnFreezePeriph
+  * @rmtoll DBGMCU_APB2FZR DBG_TIMx_STOP  LL_DBGMCU_APB2_GRP1_UnFreezePeriph
   * @param  Periphs This parameter can be a combination of the following values:
   *         @arg @ref LL_DBGMCU_APB2_GRP1_TIM1_STOP
   *         @arg @ref LL_DBGMCU_APB2_GRP1_TIM8_STOP
@@ -1029,7 +1060,7 @@ __STATIC_INLINE void LL_DBGMCU_APB2_GRP1_FreezePeriph(uint32_t Periphs)
   */
 __STATIC_INLINE void LL_DBGMCU_APB2_GRP1_UnFreezePeriph(uint32_t Periphs)
 {
-  CLEAR_BIT(DBGMCU->APB2FZ, Periphs);
+  CLEAR_BIT(DBGMCU->APB2FZR, Periphs);
 }
 
 /**
@@ -1104,6 +1135,24 @@ __STATIC_INLINE void LL_VREFBUF_SetVoltageScaling(uint32_t Scale)
 __STATIC_INLINE uint32_t LL_VREFBUF_GetVoltageScaling(void)
 {
   return (uint32_t)(READ_BIT(VREFBUF->CSR, VREFBUF_CSR_VRS));
+}
+
+/**
+  * @brief  Get the VREFBUF trimming value for VRS=0 (VREF_SC0)
+  * @retval Between 0 and 0x3F
+  */
+__STATIC_INLINE uint32_t LL_VREFBUF_SC0_GetCalibration(void)
+{
+  return (uint32_t)(*VREFBUF_SC0_CAL_ADDR);
+}
+
+/**
+  * @brief  Get the VREFBUF trimming value for VRS=1 (VREF_SC1)
+  * @retval Between 0 and 0x3F
+  */
+__STATIC_INLINE uint32_t LL_VREFBUF_SC1_GetCalibration(void)
+{
+  return (uint32_t)(*VREFBUF_SC1_CAL_ADDR);
 }
 
 /**

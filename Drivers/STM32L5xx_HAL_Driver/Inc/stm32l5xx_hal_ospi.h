@@ -92,7 +92,11 @@ typedef struct
 /**
   * @brief  HAL OSPI Handle Structure definition
   */
+#if defined (USE_HAL_OSPI_REGISTER_CALLBACKS) && (USE_HAL_OSPI_REGISTER_CALLBACKS == 1U)
 typedef struct __OSPI_HandleTypeDef
+#else
+typedef struct
+#endif
 {
   OCTOSPI_TypeDef            *Instance;     /* OSPI registers base address                      */
   OSPI_InitTypeDef           Init;          /* OSPI initialization parameters                   */
@@ -634,7 +638,7 @@ typedef void (*pOSPI_CallbackTypeDef)(OSPI_HandleTypeDef *hospi);
   * @{
   */
 /** @brief Reset OSPI handle state.
-  * @param  __HANDLE__: OSPI handle.
+  * @param  __HANDLE__ specifies the OSPI Handle.
   * @retval None
   */
 #if defined (USE_HAL_OSPI_REGISTER_CALLBACKS) && (USE_HAL_OSPI_REGISTER_CALLBACKS == 1U)
@@ -648,20 +652,20 @@ typedef void (*pOSPI_CallbackTypeDef)(OSPI_HandleTypeDef *hospi);
 #endif
 
 /** @brief  Enable the OSPI peripheral.
-  * @param  __HANDLE__: specifies the OSPI Handle.
+  * @param  __HANDLE__ specifies the OSPI Handle.
   * @retval None
   */
 #define __HAL_OSPI_ENABLE(__HANDLE__)                       SET_BIT((__HANDLE__)->Instance->CR, OCTOSPI_CR_EN)
 
 /** @brief  Disable the OSPI peripheral.
-  * @param  __HANDLE__: specifies the OSPI Handle.
+  * @param  __HANDLE__ specifies the OSPI Handle.
   * @retval None
   */
 #define __HAL_OSPI_DISABLE(__HANDLE__)                      CLEAR_BIT((__HANDLE__)->Instance->CR, OCTOSPI_CR_EN)
 
 /** @brief  Enable the specified OSPI interrupt.
-  * @param  __HANDLE__: specifies the OSPI Handle.
-  * @param  __INTERRUPT__: specifies the OSPI interrupt source to enable.
+  * @param  __HANDLE__ specifies the OSPI Handle.
+  * @param  __INTERRUPT__ specifies the OSPI interrupt source to enable.
   *          This parameter can be one of the following values:
   *            @arg HAL_OSPI_IT_TO: OSPI Timeout interrupt
   *            @arg HAL_OSPI_IT_SM: OSPI Status match interrupt
@@ -674,8 +678,8 @@ typedef void (*pOSPI_CallbackTypeDef)(OSPI_HandleTypeDef *hospi);
 
 
 /** @brief  Disable the specified OSPI interrupt.
-  * @param  __HANDLE__: specifies the OSPI Handle.
-  * @param  __INTERRUPT__: specifies the OSPI interrupt source to disable.
+  * @param  __HANDLE__ specifies the OSPI Handle.
+  * @param  __INTERRUPT__ specifies the OSPI interrupt source to disable.
   *          This parameter can be one of the following values:
   *            @arg HAL_OSPI_IT_TO: OSPI Timeout interrupt
   *            @arg HAL_OSPI_IT_SM: OSPI Status match interrupt
@@ -687,8 +691,8 @@ typedef void (*pOSPI_CallbackTypeDef)(OSPI_HandleTypeDef *hospi);
 #define __HAL_OSPI_DISABLE_IT(__HANDLE__, __INTERRUPT__)    CLEAR_BIT((__HANDLE__)->Instance->CR, (__INTERRUPT__))
 
 /** @brief  Check whether the specified OSPI interrupt source is enabled or not.
-  * @param  __HANDLE__: specifies the OSPI Handle.
-  * @param  __INTERRUPT__: specifies the OSPI interrupt source to check.
+  * @param  __HANDLE__ specifies the OSPI Handle.
+  * @param  __INTERRUPT__ specifies the OSPI interrupt source to check.
   *          This parameter can be one of the following values:
   *            @arg HAL_OSPI_IT_TO: OSPI Timeout interrupt
   *            @arg HAL_OSPI_IT_SM: OSPI Status match interrupt
@@ -701,8 +705,8 @@ typedef void (*pOSPI_CallbackTypeDef)(OSPI_HandleTypeDef *hospi);
 
 /**
   * @brief  Check whether the selected OSPI flag is set or not.
-  * @param  __HANDLE__: specifies the OSPI Handle.
-  * @param  __FLAG__: specifies the OSPI flag to check.
+  * @param  __HANDLE__ specifies the OSPI Handle.
+  * @param  __FLAG__ specifies the OSPI flag to check.
   *          This parameter can be one of the following values:
   *            @arg HAL_OSPI_FLAG_BUSY: OSPI Busy flag
   *            @arg HAL_OSPI_FLAG_TO:   OSPI Timeout flag
@@ -715,8 +719,8 @@ typedef void (*pOSPI_CallbackTypeDef)(OSPI_HandleTypeDef *hospi);
 #define __HAL_OSPI_GET_FLAG(__HANDLE__, __FLAG__)           ((READ_BIT((__HANDLE__)->Instance->SR, (__FLAG__)) != 0U) ? SET : RESET)
 
 /** @brief  Clears the specified OSPI's flag status.
-  * @param  __HANDLE__: specifies the OSPI Handle.
-  * @param  __FLAG__: specifies the OSPI clear register flag that needs to be set
+  * @param  __HANDLE__ specifies the OSPI Handle.
+  * @param  __FLAG__ specifies the OSPI clear register flag that needs to be set
   *          This parameter can be one of the following values:
   *            @arg HAL_OSPI_FLAG_TO:   OSPI Timeout flag
   *            @arg HAL_OSPI_FLAG_SM:   OSPI Status match flag

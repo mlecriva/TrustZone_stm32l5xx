@@ -133,7 +133,11 @@ typedef enum
 /**
   * @brief  IRDA handle Structure definition
   */
+#if (USE_HAL_IRDA_REGISTER_CALLBACKS == 1)
+typedef struct __IRDA_HandleTypeDef
+#else
 typedef struct
+#endif  /* USE_HAL_IRDA_REGISTER_CALLBACKS */
 {
   USART_TypeDef            *Instance;        /*!< USART registers base address       */
 
@@ -168,7 +172,57 @@ typedef struct
 
   __IO uint32_t            ErrorCode;        /*!< IRDA Error code                    */
 
+#if (USE_HAL_IRDA_REGISTER_CALLBACKS == 1)
+  void (* TxHalfCpltCallback)(struct __IRDA_HandleTypeDef *hirda);        /*!< IRDA Tx Half Complete Callback        */
+
+  void (* TxCpltCallback)(struct __IRDA_HandleTypeDef *hirda);            /*!< IRDA Tx Complete Callback             */
+
+  void (* RxHalfCpltCallback)(struct __IRDA_HandleTypeDef *hirda);        /*!< IRDA Rx Half Complete Callback        */
+
+  void (* RxCpltCallback)(struct __IRDA_HandleTypeDef *hirda);            /*!< IRDA Rx Complete Callback             */
+
+  void (* ErrorCallback)(struct __IRDA_HandleTypeDef *hirda);             /*!< IRDA Error Callback                   */
+
+  void (* AbortCpltCallback)(struct __IRDA_HandleTypeDef *hirda);         /*!< IRDA Abort Complete Callback          */
+
+  void (* AbortTransmitCpltCallback)(struct __IRDA_HandleTypeDef *hirda); /*!< IRDA Abort Transmit Complete Callback */
+
+  void (* AbortReceiveCpltCallback)(struct __IRDA_HandleTypeDef *hirda);  /*!< IRDA Abort Receive Complete Callback  */
+
+
+  void (* MspInitCallback)(struct __IRDA_HandleTypeDef *hirda);           /*!< IRDA Msp Init callback                */
+
+  void (* MspDeInitCallback)(struct __IRDA_HandleTypeDef *hirda);         /*!< IRDA Msp DeInit callback              */
+#endif  /* USE_HAL_IRDA_REGISTER_CALLBACKS */
+
 } IRDA_HandleTypeDef;
+
+#if (USE_HAL_IRDA_REGISTER_CALLBACKS == 1)
+/**
+  * @brief  HAL IRDA Callback ID enumeration definition
+  */
+typedef enum
+{
+  HAL_IRDA_TX_HALFCOMPLETE_CB_ID         = 0x00U,    /*!< IRDA Tx Half Complete Callback ID        */
+  HAL_IRDA_TX_COMPLETE_CB_ID             = 0x01U,    /*!< IRDA Tx Complete Callback ID             */
+  HAL_IRDA_RX_HALFCOMPLETE_CB_ID         = 0x02U,    /*!< IRDA Rx Half Complete Callback ID        */
+  HAL_IRDA_RX_COMPLETE_CB_ID             = 0x03U,    /*!< IRDA Rx Complete Callback ID             */
+  HAL_IRDA_ERROR_CB_ID                   = 0x04U,    /*!< IRDA Error Callback ID                   */
+  HAL_IRDA_ABORT_COMPLETE_CB_ID          = 0x05U,    /*!< IRDA Abort Complete Callback ID          */
+  HAL_IRDA_ABORT_TRANSMIT_COMPLETE_CB_ID = 0x06U,    /*!< IRDA Abort Transmit Complete Callback ID */
+  HAL_IRDA_ABORT_RECEIVE_COMPLETE_CB_ID  = 0x07U,    /*!< IRDA Abort Receive Complete Callback ID  */
+
+  HAL_IRDA_MSPINIT_CB_ID                 = 0x08U,    /*!< IRDA MspInit callback ID                 */
+  HAL_IRDA_MSPDEINIT_CB_ID               = 0x09U     /*!< IRDA MspDeInit callback ID               */
+
+} HAL_IRDA_CallbackIDTypeDef;
+
+/**
+  * @brief  HAL IRDA Callback pointer definition
+  */
+typedef  void (*pIRDA_CallbackTypeDef)(IRDA_HandleTypeDef *hirda);  /*!< pointer to an IRDA callback function */
+
+#endif /* USE_HAL_IRDA_REGISTER_CALLBACKS */
 
 /**
   * @}
@@ -213,6 +267,9 @@ typedef struct
 #define HAL_IRDA_ERROR_ORE                  ((uint32_t)0x00000008U)          /*!< Overrun error           */
 #define HAL_IRDA_ERROR_DMA                  ((uint32_t)0x00000010U)          /*!< DMA transfer error      */
 #define HAL_IRDA_ERROR_BUSY                 ((uint32_t)0x00000020U)          /*!< Busy Error              */
+#if (USE_HAL_IRDA_REGISTER_CALLBACKS == 1)
+#define HAL_IRDA_ERROR_INVALID_CALLBACK     ((uint32_t)0x00000040U)          /*!< Invalid Callback error  */
+#endif /* USE_HAL_IRDA_REGISTER_CALLBACKS */
 /**
   * @}
   */
@@ -412,10 +469,19 @@ typedef struct
   * @param  __HANDLE__ IRDA handle.
   * @retval None
   */
+#if USE_HAL_IRDA_REGISTER_CALLBACKS == 1
+#define __HAL_IRDA_RESET_HANDLE_STATE(__HANDLE__)  do{                                                   \
+                                                       (__HANDLE__)->gState = HAL_IRDA_STATE_RESET;      \
+                                                       (__HANDLE__)->RxState = HAL_IRDA_STATE_RESET;     \
+                                                       (__HANDLE__)->MspInitCallback = NULL;             \
+                                                       (__HANDLE__)->MspDeInitCallback = NULL;           \
+                                                     } while(0U)
+#else
 #define __HAL_IRDA_RESET_HANDLE_STATE(__HANDLE__)  do{                                                   \
                                                        (__HANDLE__)->gState = HAL_IRDA_STATE_RESET;      \
                                                        (__HANDLE__)->RxState = HAL_IRDA_STATE_RESET;     \
                                                      } while(0U)
+#endif /*USE_HAL_IRDA_REGISTER_CALLBACKS  */
 
 /** @brief  Flush the IRDA DR register.
   * @param  __HANDLE__ specifies the IRDA Handle.
@@ -733,6 +799,13 @@ HAL_StatusTypeDef HAL_IRDA_Init(IRDA_HandleTypeDef *hirda);
 HAL_StatusTypeDef HAL_IRDA_DeInit(IRDA_HandleTypeDef *hirda);
 void HAL_IRDA_MspInit(IRDA_HandleTypeDef *hirda);
 void HAL_IRDA_MspDeInit(IRDA_HandleTypeDef *hirda);
+
+#if (USE_HAL_IRDA_REGISTER_CALLBACKS == 1)
+/* Callbacks Register/UnRegister functions  ***********************************/
+HAL_StatusTypeDef HAL_IRDA_RegisterCallback(IRDA_HandleTypeDef *hirda, HAL_IRDA_CallbackIDTypeDef CallbackID,
+                                            pIRDA_CallbackTypeDef pCallback);
+HAL_StatusTypeDef HAL_IRDA_UnRegisterCallback(IRDA_HandleTypeDef *hirda, HAL_IRDA_CallbackIDTypeDef CallbackID);
+#endif /* USE_HAL_IRDA_REGISTER_CALLBACKS */
 
 /**
   * @}

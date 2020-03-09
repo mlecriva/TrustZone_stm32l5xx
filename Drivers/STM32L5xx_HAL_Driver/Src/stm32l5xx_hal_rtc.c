@@ -258,7 +258,6 @@ HAL_StatusTypeDef HAL_RTC_Init(RTC_HandleTypeDef *hrtc)
   /* Check the RTC peripheral state */
   if (hrtc != NULL)
   {
-    status = HAL_OK;
     /* Check the parameters */
     assert_param(IS_RTC_HOUR_FORMAT(hrtc->Init.HourFormat));
     assert_param(IS_RTC_ASYNCH_PREDIV(hrtc->Init.AsynchPrediv));
@@ -1214,7 +1213,7 @@ HAL_StatusTypeDef HAL_RTC_SetAlarm(RTC_HandleTypeDef *hrtc, RTC_AlarmTypeDef *sA
     CLEAR_BIT(RTC->CR, (RTC_CR_ALRBE | RTC_CR_ALRBIE));
     /* Clear flag alarm B */
     WRITE_REG(RTC->SCR, RTC_SCR_CALRBF);
-    /* Configure the Alarm A */
+    /* Configure the Alarm B */
     WRITE_REG(RTC->ALRMBR, tmpreg);
     /* Configure the Alarm B Sub Second register */
     WRITE_REG(RTC->ALRMBSSR, subsecondtmpreg);
@@ -1340,7 +1339,7 @@ HAL_StatusTypeDef HAL_RTC_SetAlarm_IT(RTC_HandleTypeDef *hrtc, RTC_AlarmTypeDef 
   if (sAlarm->Alarm == RTC_ALARM_A)
   {
     /* Disable the Alarm A interrupt */
-    CLEAR_BIT(RTC->CR, RTC_CR_ALRAIE);
+    CLEAR_BIT(RTC->CR, RTC_CR_ALRAE | RTC_CR_ALRAIE);
     /* Clear flag alarm A */
     WRITE_REG(RTC->SCR, RTC_SCR_CALRAF);
     /* Configure the Alarm A */
@@ -1353,7 +1352,7 @@ HAL_StatusTypeDef HAL_RTC_SetAlarm_IT(RTC_HandleTypeDef *hrtc, RTC_AlarmTypeDef 
   else
   {
     /* Disable the Alarm B interrupt */
-    CLEAR_BIT(RTC->CR, RTC_CR_ALRBIE);
+    CLEAR_BIT(RTC->CR, RTC_CR_ALRBE | RTC_CR_ALRBIE);
     /* Clear flag alarm B */
     WRITE_REG(RTC->SCR, RTC_SCR_CALRBF);
     /* Configure the Alarm B */

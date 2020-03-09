@@ -149,6 +149,14 @@ typedef struct
   * @}
   */
 
+/** @defgroup PWREx_EXT_SMPS_MAIN_REG_READY PWR SMPS main regulator ready for external SMPS
+  * @{
+  */
+#define PWR_MAINREG_READY_FOR_EXTSMPS       PWR_SR1_EXTSMPSRDY  /*!< Main Regulator ready for use with external SMPS */
+#define PWR_MAINREG_NOT_READY_FOR_EXTSMPS   0U                  /*!< Main Regulator not ready for use with external SMPS */
+/**
+  * @}
+  */
 
 /** @defgroup PWREx_VBAT_Battery_Charging_Selection PWR battery charging resistor selection
   * @{
@@ -264,8 +272,8 @@ typedef struct
   * @note Only available when system implements security (TZEN=1)
   * @{
   */
-#define PWR_SECURE_NONE                    0U                    /*!< No security on PWR ressources (default) */
-#define PWR_SECURE_ALL                     0x0F1FU               /*!< Security on all PWR ressources          */
+#define PWR_SECURE_NONE                    0U                    /*!< No security on PWR resources (default) */
+#define PWR_SECURE_ALL                     0x0F1FU               /*!< Security on all PWR resources          */
 
 #define PWR_SECURE_WUP                     PWR_SECCFGR_WUPSEC    /*!< All Wakeup pins secure configuration */
 #define PWR_SECURE_WUP1                    PWR_SECCFGR_WUP1SEC   /*!< Wakeup pin 1 secure configuration */
@@ -675,7 +683,7 @@ typedef struct
 
 /**
   * @brief Configure the main internal regulator output voltage.
-  * @param  __REGULATOR__: specifies the regulator output voltage to achieve
+  * @param  __REGULATOR__ specifies the regulator output voltage to achieve
   *         a tradeoff between performance and power consumption.
   *          This parameter can be one of the following values:
   *            @arg @ref PWR_REGULATOR_VOLTAGE_SCALE0  Regulator voltage output range 0 mode,
@@ -855,6 +863,7 @@ void HAL_PWREx_DisableUCPDDeadBattery(void);
 
 HAL_StatusTypeDef HAL_PWREx_SMPS_SetMode(uint32_t OperatingMode);
 uint32_t HAL_PWREx_SMPS_GetEffectiveMode(void);
+uint32_t HAL_PWREx_SMPS_GetMainRegulatorExtSMPSReadyStatus(void);
 void HAL_PWREx_SMPS_EnableFastStart(void);
 void HAL_PWREx_SMPS_DisableFastStart(void);
 

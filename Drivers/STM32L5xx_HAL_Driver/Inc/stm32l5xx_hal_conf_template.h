@@ -86,11 +86,11 @@
   *        (when HSE is used as system clock source, directly or through the PLL).
   */
 #if !defined  (HSE_VALUE)
-  #define HSE_VALUE              16000000U /*!< Value of the External oscillator in Hz */
+  #define HSE_VALUE          16000000UL /*!< Value of the External oscillator in Hz */
 #endif /* HSE_VALUE */
 
 #if !defined  (HSE_STARTUP_TIMEOUT)
-  #define HSE_STARTUP_TIMEOUT 100U   /*!< Time out for HSE start up, in ms */
+  #define HSE_STARTUP_TIMEOUT 100UL   /*!< Time out for HSE start up, in ms */
 #endif /* HSE_STARTUP_TIMEOUT */
 
 /**
@@ -98,7 +98,7 @@
   *        This value is the default MSI range value after Reset.
   */
 #if !defined  (MSI_VALUE)
-  #define MSI_VALUE           4000000U /*!< Value of the Internal oscillator in Hz*/
+  #define MSI_VALUE          4000000UL /*!< Value of the Internal oscillator in Hz*/
 #endif /* MSI_VALUE */
 
 /**
@@ -107,7 +107,7 @@
   *        (when HSI is used as system clock source, directly or through the PLL).
   */
 #if !defined  (HSI_VALUE)
-  #define HSI_VALUE           16000000U /*!< Value of the Internal oscillator in Hz*/
+  #define HSI_VALUE          16000000UL /*!< Value of the Internal oscillator in Hz*/
 #endif /* HSI_VALUE */
 
 /**
@@ -118,7 +118,7 @@
   *        which is subject to manufacturing process variations.
   */
 #if !defined  (HSI48_VALUE)
- #define HSI48_VALUE          48000000U /*!< Value of the Internal High Speed oscillator for USB FS/SDMMC/RNG in Hz.
+  #define HSI48_VALUE        48000000UL /*!< Value of the Internal High Speed oscillator for USB FS/SDMMC/RNG in Hz.
                                           The real value my vary depending on manufacturing process variations.*/
 #endif /* HSI48_VALUE */
 
@@ -126,7 +126,7 @@
   * @brief Internal Low Speed oscillator (LSI) value.
   */
 #if !defined  (LSI_VALUE)
- #define LSI_VALUE            32000U    /*!< LSI Typical Value in Hz*/
+ #define LSI_VALUE           32000UL    /*!< LSI Typical Value in Hz*/
 #endif /* LSI_VALUE */                  /*!< Value of the Internal Low Speed oscillator in Hz
                                           The real value may vary depending on the variations
                                           in voltage and temperature.*/
@@ -135,11 +135,11 @@
   *        This value is used by the UART, RTC HAL module to compute the system frequency
   */
 #if !defined  (LSE_VALUE)
-  #define LSE_VALUE           32768U    /*!< Value of the External oscillator in Hz*/
+  #define LSE_VALUE          32768UL    /*!< Value of the External oscillator in Hz*/
 #endif /* LSE_VALUE */
 
 #if !defined  (LSE_STARTUP_TIMEOUT)
-  #define LSE_STARTUP_TIMEOUT 5000U     /*!< Time out for LSE start up, in ms */
+  #define LSE_STARTUP_TIMEOUT 5000UL    /*!< Time out for LSE start up, in ms */
 #endif /* HSE_STARTUP_TIMEOUT */
 
 /**
@@ -148,7 +148,7 @@
   *        frequency.
   */
 #if !defined  (EXTERNAL_SAI1_CLOCK_VALUE)
-  #define EXTERNAL_SAI1_CLOCK_VALUE  48000U /*!< Value of the SAI1 External clock source in Hz*/
+  #define EXTERNAL_SAI1_CLOCK_VALUE  48000UL /*!< Value of the SAI1 External clock source in Hz*/
 #endif /* EXTERNAL_SAI1_CLOCK_VALUE */
 
 /**
@@ -157,7 +157,7 @@
   *        frequency.
   */
 #if !defined  (EXTERNAL_SAI2_CLOCK_VALUE)
-  #define EXTERNAL_SAI2_CLOCK_VALUE   48000U /*!< Value of the SAI2 External clock source in Hz*/
+  #define EXTERNAL_SAI2_CLOCK_VALUE   48000UL /*!< Value of the SAI2 External clock source in Hz*/
 #endif /* EXTERNAL_SAI2_CLOCK_VALUE */
 
 /* Tip: To avoid modifying this file each time you need to use different HSE,
@@ -167,7 +167,7 @@
 /**
   * @brief This is the HAL system configuration section
   */
-#define VDD_VALUE          3300U /*!< Value of VDD in mv */
+#define VDD_VALUE          3300UL /*!< Value of VDD in mv */
 #define TICK_INT_PRIORITY  ((1UL<<__NVIC_PRIO_BITS) - 1UL)  /*!< tick interrupt priority (lowest by default) */
 #define USE_RTOS           0U
 

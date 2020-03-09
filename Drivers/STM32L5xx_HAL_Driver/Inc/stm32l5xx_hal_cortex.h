@@ -139,7 +139,7 @@ void HAL_SYSTICK_Callback(void);
 
 #define IS_NVIC_SUB_PRIORITY(PRIORITY)         ((PRIORITY) < (1UL<<__NVIC_PRIO_BITS))
 
-#define IS_NVIC_DEVICE_IRQ(IRQ)                ((IRQ) >= 0x00)
+#define IS_NVIC_DEVICE_IRQ(IRQ)                ((IRQ) > SysTick_IRQn)
 
 #define IS_SYSTICK_CLK_SOURCE(SOURCE) (((SOURCE) == SYSTICK_CLKSOURCE_HCLK) || \
                                        ((SOURCE) == SYSTICK_CLKSOURCE_HCLK_DIV8))

@@ -4,13 +4,13 @@
   * @author  MCD Application Team
   * @brief   CMSIS Cortex-M33 Device Peripheral Access Layer System Source File
   *          to be used in secure application when the system implements
-  *          the security.
+  *          the TrustZone-M security.
   *
   *   This file provides two functions and one global variable to be called from
   *   user application:
-  *      - SystemInit(): This function is called at startup just after reset and
-  *                      before branch to main program. This call is made inside
-  *                      the "startup_stm32l5xx.s" file.
+  *      - SystemInit(): This function is called at secure startup just after reset
+  *                      and before branch to secure main program.
+  *                      This call is made inside the "startup_stm32l5xx.s" file.
   *
   *      - SystemCoreClock variable: Contains the core clock (HCLK), it can be used
   *                                  by the user application to setup the SysTick
@@ -20,11 +20,18 @@
   *                                 be called whenever the core clock is changed
   *                                 during program execution.
   *
+  *      - SECURE_SystemCoreClockUpdate(): Non-secure callable function to update
+  *                                        the variable SystemCoreClock and return
+  *                                        its value to the non-secure calling 
+  *                                        application. It must be called whenever
+  *                                        the core clock is changed during program
+  *                                        execution.
+  *
   *   After each device reset the MSI (4 MHz) is used as system clock source.
   *   Then SystemInit() function is called, in "startup_stm32l5xx.s" file, to
   *   configure the system clock before to branch to main program.
   *
-  *   This file configures the system clock as follows:
+  *   This file insures the system clock as follows:
   *=============================================================================
   *-----------------------------------------------------------------------------
   *        System Clock source                    | MSI
@@ -112,6 +119,12 @@
   * @{
   */
 
+#if defined ( __ICCARM__ )
+#  define CMSE_NS_ENTRY __cmse_nonsecure_entry
+#else
+#  define CMSE_NS_ENTRY __attribute((cmse_nonsecure_entry))
+#endif
+
 /**
   * @}
   */
@@ -132,12 +145,31 @@
   #define HSI_VALUE    16000000U /*!< Value of the Internal oscillator in Hz*/
 #endif /* HSI_VALUE */
 
-/************************* Miscellaneous Configuration ************************/
-/*!< Uncomment the following line if you need to relocate your vector Table in
-     Internal SRAM. */
+/* Note: Following vector table addresses must be defined in line with linker
+         configuration. */
+/*!< Uncomment the following line if you need to relocate the vector table
+     anywhere in Flash or Sram, else the vector table is kept at the automatic
+     remap of boot address selected */
+/* #define USER_VECT_TAB_ADDRESS */
+
+#if defined(USER_VECT_TAB_ADDRESS)
+/*!< Uncomment the following line if you need to relocate your vector Table
+     in Sram else user remap will be done in Flash. */
 /* #define VECT_TAB_SRAM */
-#define VECT_TAB_OFFSET  0x00 /*!< Vector Table base offset field.
-                                   This value must be a multiple of 0x200. */
+
+#if defined(VECT_TAB_SRAM)
+#define VECT_TAB_BASE_ADDRESS   SRAM1_BASE_S    /*!< Vector Table base address field.
+                                                     This value must be a multiple of 0x200. */
+#define VECT_TAB_OFFSET         0x00000000U     /*!< Vector Table base offset field.
+                                                     This value must be a multiple of 0x200. */
+#else
+#define VECT_TAB_BASE_ADDRESS   FLASH_BASE_S    /*!< Vector Table base address field.
+                                                     This value must be a multiple of 0x200. */
+#define VECT_TAB_OFFSET         0x00000000U     /*!< Vector Table base offset field.
+                                                     This value must be a multiple of 0x200. */
+#endif /* VECT_TAB_SRAM */
+#endif /* USER_VECT_TAB_ADDRESS */
+
 /******************************************************************************/
 /**
   * @}
@@ -166,8 +198,9 @@
 
   const uint8_t  AHBPrescTable[16] = {0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 1U, 2U, 3U, 4U, 6U, 7U, 8U, 9U};
   const uint8_t  APBPrescTable[8] =  {0U, 0U, 0U, 0U, 1U, 2U, 3U, 4U};
-  const uint32_t MSIRangeTable[12] = {100000U,   200000U,   400000U,   800000U,  1000000U,  2000000U, \
-                                      4000000U, 8000000U, 16000000U, 24000000U, 32000000U, 48000000U};
+  const uint32_t MSIRangeTable[16] = {100000U,   200000U,   400000U,   800000U,  1000000U,  2000000U, \
+                                      4000000U, 8000000U, 16000000U, 24000000U, 32000000U, 48000000U, \
+                                      0U,       0U,       0U,        0U};  /* MISRAC-2012: 0U for unexpected value */
 /**
   * @}
   */
@@ -186,7 +219,6 @@
 
 /**
   * @brief  Setup the microcontroller system.
-  * @param  None
   * @retval None
   */
 
@@ -195,17 +227,16 @@ void SystemInit(void)
   /* SAU/IDAU, FPU and Interrupts secure/non-secure allocation settings */
   TZ_SAU_Setup();
 
-  /* FPU settings ------------------------------------------------------------*/
-#if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
-  SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));  /* set CP10 and CP11 Full Access */
-
-  SCB_NS->CPACR |= ((3UL << 10*2)|(3UL << 11*2));  /* set CP10 and CP11 Full Access */
+  /* Configure the Vector Table location -------------------------------------*/
+#if defined(USER_VECT_TAB_ADDRESS)
+  SCB->VTOR = VECT_TAB_BASE_ADDRESS | VECT_TAB_OFFSET;
 #endif
 
-  /* Configure the Vector Table location add offset address ------------------*/
-  /* Secure memory space */
-#ifdef VECT_TAB_SRAM
-  SCB->VTOR = SRAM_BASE_S | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal SRAM */
+  /* FPU settings ------------------------------------------------------------*/
+#if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
+  SCB->CPACR |= ((3UL << 20U)|(3UL << 22U));  /* set CP10 and CP11 Full Access */
+
+  SCB_NS->CPACR |= ((3UL << 20U)|(3UL << 22U));  /* set CP10 and CP11 Full Access */
 #endif
 }
 
@@ -253,15 +284,14 @@ void SystemInit(void)
   *         - The result of this function could be not correct when using fractional
   *           value for HSE crystal.
   *
-  * @param  None
   * @retval None
   */
 void SystemCoreClockUpdate(void)
 {
-  uint32_t tmp = 0U, msirange = 0U, pllvco = 0U, pllr = 2U, pllsource = 0U, pllm = 2U;
+  uint32_t tmp, msirange, pllvco, pllsource, pllm, pllr;
 
   /* Get MSI Range frequency--------------------------------------------------*/
-  if((RCC->CR & RCC_CR_MSIRGSEL) == RESET)
+  if((RCC->CR & RCC_CR_MSIRGSEL) == 0U)
   { /* MSISRANGE from RCC_CSR applies */
     msirange = (RCC->CSR & RCC_CSR_MSISRANGE) >> 8U;
   }
@@ -324,6 +354,21 @@ void SystemCoreClockUpdate(void)
   SystemCoreClock >>= tmp;
 }
 
+
+/**
+  * @brief  Secure Non-Secure-Callable function to return the current
+  *         SystemCoreClock value after SystemCoreClock update.
+  *         The SystemCoreClock variable contains the core clock (HCLK), it can
+  *         be used by the user application to setup the SysTick timer or configure
+  *         other parameters.
+  * @retval SystemCoreClock value (HCLK)
+  */
+CMSE_NS_ENTRY uint32_t SECURE_SystemCoreClockUpdate(void)
+{
+  SystemCoreClockUpdate();
+  
+  return SystemCoreClock;
+}
 
 /**
   * @}

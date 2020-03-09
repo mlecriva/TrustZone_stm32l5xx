@@ -369,12 +369,12 @@ HAL_StatusTypeDef HAL_SD_Init(SD_HandleTypeDef *hsd)
     hsd->RxCpltCallback    = HAL_SD_RxCpltCallback;
     hsd->ErrorCallback     = HAL_SD_ErrorCallback;
     hsd->AbortCpltCallback = HAL_SD_AbortCallback;
-    hsd->Read_DMADblBuf0CpltCallback = HAL_SDEx_Read_DMADoubleBuffer0CpltCallback;
-    hsd->Read_DMADblBuf1CpltCallback = HAL_SDEx_Read_DMADoubleBuffer1CpltCallback;
-    hsd->Write_DMADblBuf0CpltCallback = HAL_SDEx_Write_DMADoubleBuffer0CpltCallback;
-    hsd->Write_DMADblBuf1CpltCallback = HAL_SDEx_Write_DMADoubleBuffer1CpltCallback;
+    hsd->Read_DMADblBuf0CpltCallback = HAL_SDEx_Read_DMADoubleBuf0CpltCallback;
+    hsd->Read_DMADblBuf1CpltCallback = HAL_SDEx_Read_DMADoubleBuf1CpltCallback;
+    hsd->Write_DMADblBuf0CpltCallback = HAL_SDEx_Write_DMADoubleBuf0CpltCallback;
+    hsd->Write_DMADblBuf1CpltCallback = HAL_SDEx_Write_DMADoubleBuf1CpltCallback;
 #if (USE_SD_TRANSCEIVER != 0U)
-    if hsd->Init.TranceiverPresent == SDMMC_TRANSCEIVER_PRESENT)
+    if (hsd->Init.TranceiverPresent == SDMMC_TRANSCEIVER_PRESENT)
     {
       hsd->DriveTransceiver_1_8V_Callback = HAL_SD_DriveTransceiver_1_8V_Callback;
     }
@@ -464,8 +464,8 @@ HAL_StatusTypeDef HAL_SD_Init(SD_HandleTypeDef *hsd)
 HAL_StatusTypeDef HAL_SD_InitCard(SD_HandleTypeDef *hsd)
 {
   uint32_t errorstate;
-  HAL_StatusTypeDef status;
   SD_InitTypeDef Init;
+  uint32_t sdmmc_clk;
 
   /* Default SDMMC peripheral configuration for SD card initialization */
   Init.ClockEdge           = SDMMC_CLOCK_EDGE_RISING;
@@ -474,26 +474,34 @@ HAL_StatusTypeDef HAL_SD_InitCard(SD_HandleTypeDef *hsd)
   Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
   Init.ClockDiv            = SDMMC_INIT_CLK_DIV;
 
-#if (USE_SD_TRANSCEIVER != 0U) || defined (USE_SD_DIRPOL)
+#if (USE_SD_TRANSCEIVER != 0U)
   if (hsd->Init.TranceiverPresent == SDMMC_TRANSCEIVER_PRESENT)
   {
     /* Set Transceiver polarity */
     hsd->Instance->POWER |= SDMMC_POWER_DIRPOL;
   }
+#elif defined (USE_SD_DIRPOL)
+    /* Set Transceiver polarity */
+    hsd->Instance->POWER |= SDMMC_POWER_DIRPOL;
 #endif /* USE_SD_TRANSCEIVER  */
 
   /* Initialize SDMMC peripheral interface with default configuration */
-  status = SDMMC_Init(hsd->Instance, Init);
-  if(status != HAL_OK)
-  {
-    return HAL_ERROR;
-  }
+  (void)SDMMC_Init(hsd->Instance, Init);
 
   /* Set Power State to ON */
-  status = SDMMC_PowerState_ON(hsd->Instance);
-  if(status != HAL_OK)
+  (void)SDMMC_PowerState_ON(hsd->Instance);
+
+  /* wait 74 Cycles: required power up waiting time before starting
+     the SD initialization sequence */
+  sdmmc_clk = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SDMMC1)/(2U*SDMMC_INIT_CLK_DIV);
+
+  if(sdmmc_clk != 0U)
   {
-    return HAL_ERROR;
+    HAL_Delay(1U+ (74U*1000U/(sdmmc_clk)));
+  }
+  else
+  {
+    HAL_Delay(2U);
   }
 
   /* Identify card operating voltage */
@@ -511,6 +519,17 @@ HAL_StatusTypeDef HAL_SD_InitCard(SD_HandleTypeDef *hsd)
   {
     hsd->State = HAL_SD_STATE_READY;
     hsd->ErrorCode |= errorstate;
+    return HAL_ERROR;
+  }
+
+  /* Set Block Size for Card */
+  errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
+  if(errorstate != HAL_SD_ERROR_NONE)
+  {
+    /* Clear all the static flags */
+    __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
+    hsd->ErrorCode |= errorstate;
+    hsd->State = HAL_SD_STATE_READY;
     return HAL_ERROR;
   }
 
@@ -668,17 +687,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     if(hsd->SdCard.CardType != CARD_SDHC_SDXC)
     {
       add *= 512U;
-    }
-
-    /* Set Block Size for Card */
-    errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
-    if(errorstate != HAL_SD_ERROR_NONE)
-    {
-      /* Clear all the static flags */
-      __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
-      hsd->ErrorCode |= errorstate;
-      hsd->State = HAL_SD_STATE_READY;
-      return HAL_ERROR;
     }
 
     /* Configure the SD DPSM (Data Path State Machine) */
@@ -863,17 +871,6 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint
       add *= 512U;
     }
 
-    /* Set Block Size for Card */
-    errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
-    if(errorstate != HAL_SD_ERROR_NONE)
-    {
-      /* Clear all the static flags */
-      __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
-      hsd->ErrorCode |= errorstate;
-      hsd->State = HAL_SD_STATE_READY;
-      return HAL_ERROR;
-    }
-
     /* Configure the SD DPSM (Data Path State Machine) */
     config.DataTimeOut   = SDMMC_DATATIMEOUT;
     config.DataLength    = NumberOfBlocks * BLOCKSIZE;
@@ -1052,22 +1049,9 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_IT(SD_HandleTypeDef *hsd, uint8_t *pData, ui
     hsd->pRxBuffPtr = pData;
     hsd->RxXferSize = BLOCKSIZE * NumberOfBlocks;
 
-    __HAL_SD_ENABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_RXOVERR | SDMMC_IT_DATAEND | SDMMC_FLAG_RXFIFOHF));
-
     if(hsd->SdCard.CardType != CARD_SDHC_SDXC)
     {
       add *= 512U;
-    }
-
-    /* Set Block Size for Card */
-    errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
-    if(errorstate != HAL_SD_ERROR_NONE)
-    {
-      /* Clear all the static flags */
-      __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
-      hsd->ErrorCode |= errorstate;
-      hsd->State = HAL_SD_STATE_READY;
-      return HAL_ERROR;
     }
 
     /* Configure the SD DPSM (Data Path State Machine) */
@@ -1104,6 +1088,8 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_IT(SD_HandleTypeDef *hsd, uint8_t *pData, ui
       hsd->Context = SD_CONTEXT_NONE;
       return HAL_ERROR;
     }
+
+    __HAL_SD_ENABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_RXOVERR | SDMMC_IT_DATAEND | SDMMC_FLAG_RXFIFOHF));
 
     return HAL_OK;
   }
@@ -1156,23 +1142,9 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks_IT(SD_HandleTypeDef *hsd, uint8_t *pData, u
     hsd->pTxBuffPtr = pData;
     hsd->TxXferSize = BLOCKSIZE * NumberOfBlocks;
 
-    /* Enable transfer interrupts */
-    __HAL_SD_ENABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_TXUNDERR | SDMMC_IT_DATAEND | SDMMC_FLAG_TXFIFOHE));
-
     if(hsd->SdCard.CardType != CARD_SDHC_SDXC)
     {
       add *= 512U;
-    }
-
-    /* Set Block Size for Card */
-    errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
-    if(errorstate != HAL_SD_ERROR_NONE)
-    {
-      /* Clear all the static flags */
-      __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
-      hsd->ErrorCode |= errorstate;
-      hsd->State = HAL_SD_STATE_READY;
-      return HAL_ERROR;
     }
 
     /* Configure the SD DPSM (Data Path State Machine) */
@@ -1210,6 +1182,9 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks_IT(SD_HandleTypeDef *hsd, uint8_t *pData, u
       hsd->Context = SD_CONTEXT_NONE;
       return HAL_ERROR;
     }
+
+    /* Enable transfer interrupts */
+    __HAL_SD_ENABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_TXUNDERR | SDMMC_IT_DATAEND | SDMMC_FLAG_TXFIFOHE));
 
     return HAL_OK;
   }
@@ -1267,17 +1242,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
       add *= 512U;
     }
 
-    /* Set Block Size for Card */
-    errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
-    if(errorstate != HAL_SD_ERROR_NONE)
-    {
-      /* Clear all the static flags */
-      __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
-      hsd->ErrorCode |= errorstate;
-      hsd->State = HAL_SD_STATE_READY;
-      return HAL_ERROR;
-    }
-
     /* Configure the SD DPSM (Data Path State Machine) */
     config.DataTimeOut   = SDMMC_DATATIMEOUT;
     config.DataLength    = BLOCKSIZE * NumberOfBlocks;
@@ -1286,9 +1250,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
     config.TransferMode  = SDMMC_TRANSFER_MODE_BLOCK;
     config.DPSM          = SDMMC_DPSM_DISABLE;
     (void)SDMMC_ConfigData(hsd->Instance, &config);
-
-    /* Enable transfer interrupts */
-    __HAL_SD_ENABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_RXOVERR | SDMMC_IT_DATAEND));
 
     __SDMMC_CMDTRANS_ENABLE( hsd->Instance);
     hsd->Instance->IDMABASE0 = (uint32_t) pData ;
@@ -1313,12 +1274,15 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
     {
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
-      __HAL_SD_DISABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_RXOVERR | SDMMC_IT_DATAEND));
       hsd->ErrorCode |= errorstate;
       hsd->State = HAL_SD_STATE_READY;
       hsd->Context = SD_CONTEXT_NONE;
       return HAL_ERROR;
     }
+
+    /* Enable transfer interrupts */
+    __HAL_SD_ENABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_RXOVERR | SDMMC_IT_DATAEND));
+
 
     return HAL_OK;
   }
@@ -1376,16 +1340,6 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, 
       add *= 512U;
     }
 
-    /* Set Block Size for Card */
-    errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
-    if(errorstate != HAL_SD_ERROR_NONE)
-    {
-      /* Clear all the static flags */
-      __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
-      hsd->ErrorCode |= errorstate;
-      hsd->State = HAL_SD_STATE_READY;
-      return HAL_ERROR;
-    }
     /* Configure the SD DPSM (Data Path State Machine) */
     config.DataTimeOut   = SDMMC_DATATIMEOUT;
     config.DataLength    = BLOCKSIZE * NumberOfBlocks;
@@ -1395,8 +1349,6 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, 
     config.DPSM          = SDMMC_DPSM_DISABLE;
     (void)SDMMC_ConfigData(hsd->Instance, &config);
 
-    /* Enable transfer interrupts */
-    __HAL_SD_ENABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_TXUNDERR | SDMMC_IT_DATAEND));
 
     __SDMMC_CMDTRANS_ENABLE( hsd->Instance);
 
@@ -1422,12 +1374,14 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, 
     {
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
-      __HAL_SD_DISABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_TXUNDERR | SDMMC_IT_DATAEND));
       hsd->ErrorCode |= errorstate;
       hsd->State = HAL_SD_STATE_READY;
       hsd->Context = SD_CONTEXT_NONE;
       return HAL_ERROR;
     }
+
+    /* Enable transfer interrupts */
+    __HAL_SD_ENABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_TXUNDERR | SDMMC_IT_DATAEND));
 
     return HAL_OK;
   }
@@ -1523,7 +1477,7 @@ HAL_StatusTypeDef HAL_SD_Erase(SD_HandleTypeDef *hsd, uint32_t BlockStartAdd, ui
     }
 
     /* Send CMD38 ERASE */
-    errorstate = SDMMC_CmdErase(hsd->Instance);
+    errorstate = SDMMC_CmdErase(hsd->Instance, 0UL);
     if(errorstate != HAL_SD_ERROR_NONE)
     {
       /* Clear all the static flags */
@@ -1738,7 +1692,7 @@ void HAL_SD_IRQHandler(SD_HandleTypeDef *hsd)
 #if defined (USE_HAL_SD_REGISTER_CALLBACKS) && (USE_HAL_SD_REGISTER_CALLBACKS == 1U)
         hsd->Write_DMADblBuf1CpltCallback(hsd);
 #else
-        HAL_SDEx_Write_DMADoubleBuffer1CpltCallback(hsd);
+        HAL_SDEx_Write_DMADoubleBuf1CpltCallback(hsd);
 #endif /* USE_HAL_SD_REGISTER_CALLBACKS */
       }
       else /* SD_CONTEXT_READ_MULTIPLE_BLOCK */
@@ -1746,7 +1700,7 @@ void HAL_SD_IRQHandler(SD_HandleTypeDef *hsd)
 #if defined (USE_HAL_SD_REGISTER_CALLBACKS) && (USE_HAL_SD_REGISTER_CALLBACKS == 1U)
         hsd->Read_DMADblBuf1CpltCallback(hsd);
 #else
-        HAL_SDEx_Read_DMADoubleBuffer1CpltCallback(hsd);
+        HAL_SDEx_Read_DMADoubleBuf1CpltCallback(hsd);
 #endif /* USE_HAL_SD_REGISTER_CALLBACKS */
       }
     }
@@ -1758,7 +1712,7 @@ void HAL_SD_IRQHandler(SD_HandleTypeDef *hsd)
 #if defined (USE_HAL_SD_REGISTER_CALLBACKS) && (USE_HAL_SD_REGISTER_CALLBACKS == 1U)
         hsd->Write_DMADblBuf0CpltCallback(hsd);
 #else
-        HAL_SDEx_Write_DMADoubleBuffer0CpltCallback(hsd);
+        HAL_SDEx_Write_DMADoubleBuf0CpltCallback(hsd);
 #endif /* USE_HAL_SD_REGISTER_CALLBACKS */
       }
       else /* SD_CONTEXT_READ_MULTIPLE_BLOCK */
@@ -1766,7 +1720,7 @@ void HAL_SD_IRQHandler(SD_HandleTypeDef *hsd)
 #if defined (USE_HAL_SD_REGISTER_CALLBACKS) && (USE_HAL_SD_REGISTER_CALLBACKS == 1U)
         hsd->Read_DMADblBuf0CpltCallback(hsd);
 #else
-        HAL_SDEx_Read_DMADoubleBuffer0CpltCallback(hsd);
+        HAL_SDEx_Read_DMADoubleBuf0CpltCallback(hsd);
 #endif /* USE_HAL_SD_REGISTER_CALLBACKS */
       }
     }
@@ -2023,16 +1977,16 @@ HAL_StatusTypeDef HAL_SD_UnRegisterCallback(SD_HandleTypeDef *hsd, HAL_SD_Callba
       hsd->AbortCpltCallback = HAL_SD_AbortCallback;
       break;
     case HAL_SD_READ_DMA_DBL_BUF0_CPLT_CB_ID :
-      hsd->Read_DMADblBuf0CpltCallback = HAL_SDEx_Read_DMADoubleBuffer0CpltCallback;
+      hsd->Read_DMADblBuf0CpltCallback = HAL_SDEx_Read_DMADoubleBuf0CpltCallback;
       break;
     case HAL_SD_READ_DMA_DBL_BUF1_CPLT_CB_ID :
-      hsd->Read_DMADblBuf1CpltCallback = HAL_SDEx_Read_DMADoubleBuffer1CpltCallback;
+      hsd->Read_DMADblBuf1CpltCallback = HAL_SDEx_Read_DMADoubleBuf1CpltCallback;
       break;
     case HAL_SD_WRITE_DMA_DBL_BUF0_CPLT_CB_ID :
-      hsd->Write_DMADblBuf0CpltCallback = HAL_SDEx_Write_DMADoubleBuffer0CpltCallback;
+      hsd->Write_DMADblBuf0CpltCallback = HAL_SDEx_Write_DMADoubleBuf0CpltCallback;
       break;
     case HAL_SD_WRITE_DMA_DBL_BUF1_CPLT_CB_ID :
-      hsd->Write_DMADblBuf1CpltCallback = HAL_SDEx_Write_DMADoubleBuffer1CpltCallback;
+      hsd->Write_DMADblBuf1CpltCallback = HAL_SDEx_Write_DMADoubleBuf1CpltCallback;
       break;
     case HAL_SD_MSP_INIT_CB_ID :
       hsd->MspInitCallback = HAL_SD_MspInit;
@@ -2173,7 +2127,7 @@ HAL_StatusTypeDef HAL_SD_UnRegisterTransceiverCallback(SD_HandleTypeDef *hsd)
   * @brief  Returns information the information of the card which are stored on
   *         the CID register.
   * @param  hsd: Pointer to SD handle
-  * @param  pCID: Pointer to a HAL_SD_CardCIDTypeDef structure that  
+  * @param  pCID: Pointer to a HAL_SD_CardCIDTypeDef structure that
   *         contains all CID register parameters
   * @retval HAL status
   */
@@ -2206,7 +2160,7 @@ HAL_StatusTypeDef HAL_SD_GetCardCID(SD_HandleTypeDef *hsd, HAL_SD_CardCIDTypeDef
   * @brief  Returns information the information of the card which are stored on
   *         the CSD register.
   * @param  hsd: Pointer to SD handle
-  * @param  pCSD: Pointer to a HAL_SD_CardCSDTypeDef structure that  
+  * @param  pCSD: Pointer to a HAL_SD_CardCSDTypeDef structure that
   *         contains all CSD register parameters
   * @retval HAL status
   */
@@ -2320,7 +2274,7 @@ HAL_StatusTypeDef HAL_SD_GetCardCSD(SD_HandleTypeDef *hsd, HAL_SD_CardCSDTypeDef
 /**
   * @brief  Gets the SD status info.
   * @param  hsd: Pointer to SD handle
-  * @param  pStatus: Pointer to the HAL_SD_CardStatusTypeDef structure that 
+  * @param  pStatus: Pointer to the HAL_SD_CardStatusTypeDef structure that
   *         will contain the SD card status information
   * @retval HAL status
   */
@@ -2328,6 +2282,7 @@ HAL_StatusTypeDef HAL_SD_GetCardStatus(SD_HandleTypeDef *hsd, HAL_SD_CardStatusT
 {
   uint32_t sd_status[16];
   uint32_t errorstate;
+  HAL_StatusTypeDef status = HAL_OK;
 
   errorstate = SD_SendSDStatus(hsd, sd_status);
   if(errorstate != HAL_SD_ERROR_NONE)
@@ -2336,7 +2291,7 @@ HAL_StatusTypeDef HAL_SD_GetCardStatus(SD_HandleTypeDef *hsd, HAL_SD_CardStatusT
     __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
     hsd->ErrorCode |= errorstate;
     hsd->State = HAL_SD_STATE_READY;
-    return HAL_ERROR;
+    status = HAL_ERROR;
   }
   else
   {
@@ -2366,7 +2321,18 @@ HAL_StatusTypeDef HAL_SD_GetCardStatus(SD_HandleTypeDef *hsd, HAL_SD_CardStatusT
     pStatus->VideoSpeedClass = (uint8_t)((sd_status[4] & 0xFF000000U) >> 24U);
   }
 
-  return HAL_OK;
+  /* Set Block Size for Card */
+  errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
+  if(errorstate != HAL_SD_ERROR_NONE)
+  {
+    /* Clear all the static flags */
+    __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
+    hsd->ErrorCode = errorstate;
+    hsd->State = HAL_SD_STATE_READY;
+    status = HAL_ERROR;
+  }
+
+  return status;
 }
 
 /**
@@ -2405,6 +2371,7 @@ HAL_StatusTypeDef HAL_SD_ConfigWideBusOperation(SD_HandleTypeDef *hsd, uint32_t 
 {
   SDMMC_InitTypeDef Init;
   uint32_t errorstate;
+  HAL_StatusTypeDef status = HAL_OK;
 
   /* Check the parameters */
   assert_param(IS_SDMMC_BUS_WIDE(WideMode));
@@ -2446,8 +2413,7 @@ HAL_StatusTypeDef HAL_SD_ConfigWideBusOperation(SD_HandleTypeDef *hsd, uint32_t 
   {
     /* Clear all the static flags */
     __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
-    hsd->State = HAL_SD_STATE_READY;
-    return HAL_ERROR;
+    status = HAL_ERROR;
   }
   else
   {
@@ -2481,10 +2447,20 @@ HAL_StatusTypeDef HAL_SD_ConfigWideBusOperation(SD_HandleTypeDef *hsd, uint32_t 
     (void)SDMMC_Init(hsd->Instance, Init);
   }
 
+  /* Set Block Size for Card */
+  errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
+  if(errorstate != HAL_SD_ERROR_NONE)
+  {
+    /* Clear all the static flags */
+    __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
+    hsd->ErrorCode |= errorstate;
+    status = HAL_ERROR;
+  }
+
   /* Change State */
   hsd->State = HAL_SD_STATE_READY;
 
-  return HAL_OK;
+  return status;
 }
 
 /**
@@ -2502,6 +2478,7 @@ HAL_StatusTypeDef HAL_SD_ConfigWideBusOperation(SD_HandleTypeDef *hsd, uint32_t 
 HAL_StatusTypeDef HAL_SD_ConfigSpeedBusOperation(SD_HandleTypeDef *hsd, uint32_t SpeedMode)
 {
   uint32_t tickstart;
+  uint32_t errorstate;
   HAL_StatusTypeDef status = HAL_OK;
 
   /* Check the parameters */
@@ -2727,6 +2704,16 @@ HAL_StatusTypeDef HAL_SD_ConfigSpeedBusOperation(SD_HandleTypeDef *hsd, uint32_t
       hsd->State = HAL_SD_STATE_READY;
       return HAL_TIMEOUT;
     }
+  }
+
+  /* Set Block Size for Card */
+  errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
+  if(errorstate != HAL_SD_ERROR_NONE)
+  {
+    /* Clear all the static flags */
+    __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
+    hsd->ErrorCode |= errorstate;
+    status = HAL_ERROR;
   }
 
   /* Change State */
@@ -3096,8 +3083,6 @@ static uint32_t SD_PowerON(SD_HandleTypeDef *hsd)
           /* Clean Status flags */
           hsd->Instance->ICR = 0xFFFFFFFFU;
         }
-
-        hsd->SdCard.CardSpeed = CARD_ULTRA_HIGH_SPEED;
       }
     }
 #endif /* USE_SD_TRANSCEIVER  */
@@ -3259,7 +3244,7 @@ static uint32_t SD_SendStatus(SD_HandleTypeDef *hsd, uint32_t *pCardStatus)
   */
 static uint32_t SD_WideBus_Enable(SD_HandleTypeDef *hsd)
 {
-  uint32_t scr[2U] = {0U, 0U};
+  uint32_t scr[2U] = {0UL, 0UL};
   uint32_t errorstate;
 
   if((SDMMC_GetResponse(hsd->Instance, SDMMC_RESP1) & SDMMC_CARD_LOCKED) == SDMMC_CARD_LOCKED)
@@ -3306,7 +3291,7 @@ static uint32_t SD_WideBus_Enable(SD_HandleTypeDef *hsd)
   */
 static uint32_t SD_WideBus_Disable(SD_HandleTypeDef *hsd)
 {
-  uint32_t scr[2U] = {0U, 0U};
+  uint32_t scr[2U] = {0UL, 0UL};
   uint32_t errorstate;
 
   if((SDMMC_GetResponse(hsd->Instance, SDMMC_RESP1) & SDMMC_CARD_LOCKED) == SDMMC_CARD_LOCKED)
@@ -3359,7 +3344,7 @@ static uint32_t SD_FindSCR(SD_HandleTypeDef *hsd, uint32_t *pSCR)
   uint32_t errorstate;
   uint32_t tickstart = HAL_GetTick();
   uint32_t index = 0U;
-  uint32_t tempscr[2U] = {0U, 0U};
+  uint32_t tempscr[2U] = {0UL, 0UL};
   uint32_t *scr = pSCR;
 
   /* Set Block Size To 8 Bytes */
@@ -3536,7 +3521,7 @@ uint32_t SD_HighSpeed(SD_HandleTypeDef *hsd)
   {
     /* Initialize the Data control register */
     hsd->Instance->DCTRL = 0;
-    errorstate = SDMMC_CmdBlockLength(hsd->Instance, 64);
+    errorstate = SDMMC_CmdBlockLength(hsd->Instance, 64U);
 
     if (errorstate != HAL_SD_ERROR_NONE)
     {
@@ -3545,16 +3530,13 @@ uint32_t SD_HighSpeed(SD_HandleTypeDef *hsd)
 
     /* Configure the SD DPSM (Data Path State Machine) */
     sdmmc_datainitstructure.DataTimeOut   = SDMMC_DATATIMEOUT;
-    sdmmc_datainitstructure.DataLength    = 64;
+    sdmmc_datainitstructure.DataLength    = 64U;
     sdmmc_datainitstructure.DataBlockSize = SDMMC_DATABLOCK_SIZE_64B ;
     sdmmc_datainitstructure.TransferDir   = SDMMC_TRANSFER_DIR_TO_SDMMC;
     sdmmc_datainitstructure.TransferMode  = SDMMC_TRANSFER_MODE_BLOCK;
     sdmmc_datainitstructure.DPSM          = SDMMC_DPSM_ENABLE;
 
-    if ( SDMMC_ConfigData(hsd->Instance, &sdmmc_datainitstructure) != HAL_OK)
-    {
-      return (HAL_SD_ERROR_GENERAL_UNKNOWN_ERR);
-    }
+    (void)SDMMC_ConfigData(hsd->Instance, &sdmmc_datainitstructure);
 
 
     errorstate = SDMMC_CmdSwitch(hsd->Instance,SDMMC_SDR25_SWITCH_PATTERN);
@@ -3585,8 +3567,6 @@ uint32_t SD_HighSpeed(SD_HandleTypeDef *hsd)
     if (__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DTIMEOUT))
     {
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_FLAG_DTIMEOUT);
-
-      errorstate = 0;
 
       return errorstate;
     }
@@ -3652,7 +3632,7 @@ static uint32_t SD_UltraHighSpeed(SD_HandleTypeDef *hsd)
   {
     /* Initialize the Data control register */
     hsd->Instance->DCTRL = 0;
-    errorstate = SDMMC_CmdBlockLength(hsd->Instance, 64);
+    errorstate = SDMMC_CmdBlockLength(hsd->Instance, 64U);
 
     if (errorstate != HAL_SD_ERROR_NONE)
     {
@@ -3661,7 +3641,7 @@ static uint32_t SD_UltraHighSpeed(SD_HandleTypeDef *hsd)
 
     /* Configure the SD DPSM (Data Path State Machine) */
     sdmmc_datainitstructure.DataTimeOut   = SDMMC_DATATIMEOUT;
-    sdmmc_datainitstructure.DataLength    = 64;
+    sdmmc_datainitstructure.DataLength    = 64U;
     sdmmc_datainitstructure.DataBlockSize = SDMMC_DATABLOCK_SIZE_64B ;
     sdmmc_datainitstructure.TransferDir   = SDMMC_TRANSFER_DIR_TO_SDMMC;
     sdmmc_datainitstructure.TransferMode  = SDMMC_TRANSFER_MODE_BLOCK;
@@ -3700,8 +3680,6 @@ static uint32_t SD_UltraHighSpeed(SD_HandleTypeDef *hsd)
     if (__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DTIMEOUT))
     {
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_FLAG_DTIMEOUT);
-
-      errorstate = 0;
 
       return errorstate;
     }
@@ -3782,7 +3760,7 @@ static uint32_t SD_DDR_Mode(SD_HandleTypeDef *hsd)
   {
     /* Initialize the Data control register */
     hsd->Instance->DCTRL = 0;
-    errorstate = SDMMC_CmdBlockLength(hsd->Instance, 64);
+    errorstate = SDMMC_CmdBlockLength(hsd->Instance, 64U);
 
     if (errorstate != HAL_SD_ERROR_NONE)
     {
@@ -3791,7 +3769,7 @@ static uint32_t SD_DDR_Mode(SD_HandleTypeDef *hsd)
 
     /* Configure the SD DPSM (Data Path State Machine) */
     sdmmc_datainitstructure.DataTimeOut   = SDMMC_DATATIMEOUT;
-    sdmmc_datainitstructure.DataLength    = 64;
+    sdmmc_datainitstructure.DataLength    = 64U;
     sdmmc_datainitstructure.DataBlockSize = SDMMC_DATABLOCK_SIZE_64B ;
     sdmmc_datainitstructure.TransferDir   = SDMMC_TRANSFER_DIR_TO_SDMMC;
     sdmmc_datainitstructure.TransferMode  = SDMMC_TRANSFER_MODE_BLOCK;
@@ -3830,8 +3808,6 @@ static uint32_t SD_DDR_Mode(SD_HandleTypeDef *hsd)
     if (__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DTIMEOUT))
     {
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_FLAG_DTIMEOUT);
-
-      errorstate = 0;
 
       return errorstate;
     }
@@ -3893,13 +3869,13 @@ static uint32_t SD_DDR_Mode(SD_HandleTypeDef *hsd)
   * @param hsd: SD handle
   * @retval None
   */
-__weak void HAL_SDEx_Read_DMADoubleBuffer0CpltCallback(SD_HandleTypeDef *hsd)
+__weak void HAL_SDEx_Read_DMADoubleBuf0CpltCallback(SD_HandleTypeDef *hsd)
 {
   /* Prevent unused argument(s) compilation warning */
   UNUSED(hsd);
 
   /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_SDEx_Read_DMADoubleBuffer0CpltCallback can be implemented in the user file
+            the HAL_SDEx_Read_DMADoubleBuf0CpltCallback can be implemented in the user file
    */
 }
 
@@ -3908,13 +3884,13 @@ __weak void HAL_SDEx_Read_DMADoubleBuffer0CpltCallback(SD_HandleTypeDef *hsd)
   * @param hsd: SD handle
   * @retval None
   */
-__weak void HAL_SDEx_Read_DMADoubleBuffer1CpltCallback(SD_HandleTypeDef *hsd)
+__weak void HAL_SDEx_Read_DMADoubleBuf1CpltCallback(SD_HandleTypeDef *hsd)
 {
   /* Prevent unused argument(s) compilation warning */
   UNUSED(hsd);
 
   /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_SDEx_Read_DMADoubleBuffer1CpltCallback can be implemented in the user file
+            the HAL_SDEx_Read_DMADoubleBuf1CpltCallback can be implemented in the user file
    */
 }
 
@@ -3923,13 +3899,13 @@ __weak void HAL_SDEx_Read_DMADoubleBuffer1CpltCallback(SD_HandleTypeDef *hsd)
   * @param hsd: SD handle
   * @retval None
   */
-__weak void HAL_SDEx_Write_DMADoubleBuffer0CpltCallback(SD_HandleTypeDef *hsd)
+__weak void HAL_SDEx_Write_DMADoubleBuf0CpltCallback(SD_HandleTypeDef *hsd)
 {
   /* Prevent unused argument(s) compilation warning */
   UNUSED(hsd);
 
   /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_SDEx_Write_DMADoubleBuffer0CpltCallback can be implemented in the user file
+            the HAL_SDEx_Write_DMADoubleBuf0CpltCallback can be implemented in the user file
    */
 }
 
@@ -3938,13 +3914,13 @@ __weak void HAL_SDEx_Write_DMADoubleBuffer0CpltCallback(SD_HandleTypeDef *hsd)
   * @param hsd: SD handle
   * @retval None
   */
-__weak void HAL_SDEx_Write_DMADoubleBuffer1CpltCallback(SD_HandleTypeDef *hsd)
+__weak void HAL_SDEx_Write_DMADoubleBuf1CpltCallback(SD_HandleTypeDef *hsd)
 {
   /* Prevent unused argument(s) compilation warning */
   UNUSED(hsd);
 
   /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_SDEx_Write_DMADoubleBuffer0CpltCallback can be implemented in the user file
+            the HAL_SDEx_Write_DMADoubleBuf1CpltCallback can be implemented in the user file
    */
 }
 

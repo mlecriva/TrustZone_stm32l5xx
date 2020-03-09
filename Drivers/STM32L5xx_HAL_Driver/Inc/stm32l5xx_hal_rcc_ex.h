@@ -22,7 +22,7 @@
 #define STM32L5xx_HAL_RCC_EX_H
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
@@ -68,7 +68,7 @@ typedef struct
 
   uint32_t PLLSAI1ClockOut;  /*!< PLLSAIClockOut: specifies PLLSAI1 output clock to be enabled.
                                   This parameter must be a value of @ref RCC_PLLSAI1_Clock_Output */
-}RCC_PLLSAI1InitTypeDef;
+} RCC_PLLSAI1InitTypeDef;
 
 /**
   * @brief  PLLSAI2 Clock structure definition
@@ -90,7 +90,7 @@ typedef struct
 
   uint32_t PLLSAI2ClockOut;  /*!< PLLSAIClockOut: specifies PLLSAI2 output clock to be enabled.
                                   This parameter must be a value of @ref RCC_PLLSAI2_Clock_Output */
-}RCC_PLLSAI2InitTypeDef;
+} RCC_PLLSAI2InitTypeDef;
 
 /**
   * @brief  RCC extended clocks structure definition
@@ -181,7 +181,7 @@ typedef struct
 
   uint32_t RTCClockSelection;      /*!< Specifies RTC clock source.
                                         This parameter can be a value of @ref RCC_RTC_Clock_Source */
-}RCC_PeriphCLKInitTypeDef;
+} RCC_PeriphCLKInitTypeDef;
 
 
 #if defined(CRS)
@@ -210,7 +210,7 @@ typedef struct
   uint32_t HSI48CalibrationValue; /*!< Specifies a user-programmable trimming value to the HSI48 oscillator.
                                      This parameter must be a number between 0 and 0x7F or a value of @ref RCCEx_CRS_HSI48CalibrationDefault */
 
-}RCC_CRSInitTypeDef;
+} RCC_CRSInitTypeDef;
 
 /**
   * @brief RCC_CRS Synchronization structure definition
@@ -232,7 +232,7 @@ typedef struct
                                                                     It shows whether the actual frequency is below or above the target.
                                     This parameter must be a value of @ref RCCEx_CRS_FreqErrorDirection*/
 
-}RCC_CRSSynchroInfoTypeDef;
+} RCC_CRSSynchroInfoTypeDef;
 
 #endif /* CRS */
 /**
@@ -540,8 +540,8 @@ typedef struct
   * @note Only available when system implements security (TZEN=1)
   * @{
   */
-#define RCC_SECURE_NONE                0U                      /*!< No security on RCC ressources (default) */
-#define RCC_SECURE_ALL                 0x1FFFU                 /*!< Security on all RCC ressources          */
+#define RCC_SECURE_NONE                0U                      /*!< No security on RCC resources (default) */
+#define RCC_SECURE_ALL                 0x1FFFU                 /*!< Security on all RCC resources          */
 
 #define RCC_SECURE_HSI                 RCC_SECCFGR_HSISEC      /*!< HSI clock configuration security */
 #define RCC_SECURE_HSE                 RCC_SECCFGR_HSESEC      /*!< HSE clock configuration security */
@@ -693,7 +693,7 @@ typedef struct
   * @note   This macro must be used only when the PLLSAI1 is disabled.
   * @note   This macro preserves the PLLSAI1's output clocks enable state.
   *
-  * @param  __PLLSAI1SOURCE__: specifies the PLLSAI1 entry clock source.
+  * @param  __PLLSAI1SOURCE__ specifies the PLLSAI1 entry clock source.
   *         This parameter can be one of the following values:
   *            @arg @ref RCC_PLLSOURCE_NONE  No clock selected as PLLSAI1 clock entry
   *            @arg @ref RCC_PLLSOURCE_MSI  MSI oscillator clock selected as PLLSAI1 clock entry
@@ -859,7 +859,7 @@ typedef struct
   * @note   This macro must be used only when the PLLSAIS is disabled.
   * @note   This macro preserves the PLLSAI2's output clocks enable state.
   *
-  * @param  __PLLSAI2SOURCE__: specifies the PLLSAI1 entry clock source.
+  * @param  __PLLSAI2SOURCE__ specifies the PLLSAI1 entry clock source.
   *         This parameter can be one of the following values:
   *            @arg @ref RCC_PLLSOURCE_NONE  No clock selected as PLLSAI2 clock entry
   *            @arg @ref RCC_PLLSOURCE_MSI  MSI oscillator clock selected as PLLSAI2 clock entry
@@ -1860,8 +1860,8 @@ typedef struct
   *             of the synchronization source after prescaling. It is then decreased by one in order to
   *             reach the expected synchronization on the zero value. The formula is the following:
   *             RELOAD = (fTARGET / fSYNC) -1
-  * @param  __FTARGET__ Target frequency (value in Hz)
-  * @param  __FSYNC__ Synchronization signal frequency (value in Hz)
+  * @param  __FTARGET__ Target frequency (value in Hz).
+  * @param  __FSYNC__ Synchronization signal frequency (value in Hz).
   * @retval None
   */
 #define __HAL_RCC_CRS_RELOADVALUE_CALCULATE(__FTARGET__, __FSYNC__)  (((__FTARGET__) / (__FSYNC__)) - 1U)

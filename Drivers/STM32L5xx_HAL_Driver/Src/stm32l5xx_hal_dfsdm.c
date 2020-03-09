@@ -3354,13 +3354,9 @@ static uint32_t DFSDM_GetChannelFromInstance(const DFSDM_Channel_TypeDef *Instan
   {
     channel = 2;
   }
-  else if (Instance == DFSDM1_Channel3)
+  else /* DFSDM1_Channel3 */
   {
     channel = 3;
-  }
-  else
-  {
-    channel = 0;
   }
 
   return channel;

@@ -99,7 +99,11 @@ typedef enum
   * @brief  PKA handle Structure definition
   * @{
   */
+#if (USE_HAL_PKA_REGISTER_CALLBACKS == 1)
 typedef struct __PKA_HandleTypeDef
+#else
+typedef struct
+#endif  /* USE_HAL_PKA_REGISTER_CALLBACKS */
 {
   PKA_TypeDef                   *Instance;              /*!< Register base address */
   __IO HAL_PKA_StateTypeDef     State;                  /*!< PKA state */

@@ -183,14 +183,6 @@ ErrorStatus LL_LPTIM_Init(LPTIM_TypeDef *LPTIMx, LL_LPTIM_InitTypeDef *LPTIM_Ini
 }
 
 /**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/**
   * @brief  Disable the LPTIM instance
   * @rmtoll CR           ENABLE        LL_LPTIM_Disable
   * @param  LPTIMx Low-Power Timer instance
@@ -321,6 +313,14 @@ void LL_LPTIM_Disable(LPTIM_TypeDef *LPTIMx)
 
   __enable_irq();
 }
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 /**
   * @}

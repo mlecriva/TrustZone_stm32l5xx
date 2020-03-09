@@ -302,10 +302,6 @@ HAL_StatusTypeDef SDMMC_PowerState_ON(SDMMC_TypeDef *SDMMCx)
   /* Set power state to ON */
   SDMMCx->POWER |= SDMMC_POWER_PWRCTRL;
 
-  /* 1ms: required power up waiting time before starting the SD initialization
-  sequence */
-  HAL_Delay(2);
-
   return HAL_OK;
 }
 
@@ -732,16 +728,17 @@ uint32_t SDMMC_CmdEraseEndAdd(SDMMC_TypeDef *SDMMCx, uint32_t EndAdd)
 
 /**
   * @brief  Send the Erase command and check the response
-  * @param  SDMMCx: Pointer to SDMMC register base
+  * @param  SDMMCx Pointer to SDMMC register base
+  * @param  EraseType Type of erase to be performed
   * @retval HAL status
   */
-uint32_t SDMMC_CmdErase(SDMMC_TypeDef *SDMMCx)
+uint32_t SDMMC_CmdErase(SDMMC_TypeDef *SDMMCx, uint32_t EraseType)
 {
   SDMMC_CmdInitTypeDef  sdmmc_cmdinit;
   uint32_t errorstate;
 
   /* Set Block Size for Card */
-  sdmmc_cmdinit.Argument         = 0U;
+  sdmmc_cmdinit.Argument         = EraseType;
   sdmmc_cmdinit.CmdIndex         = SDMMC_CMD_ERASE;
   sdmmc_cmdinit.Response         = SDMMC_RESPONSE_SHORT;
   sdmmc_cmdinit.WaitForInterrupt = SDMMC_WAIT_NO;
@@ -780,6 +777,12 @@ uint32_t SDMMC_CmdStopTransfer(SDMMC_TypeDef *SDMMCx)
   errorstate = SDMMC_GetCmdResp1(SDMMCx, SDMMC_CMD_STOP_TRANSMISSION, SDMMC_STOPTRANSFERTIMEOUT);
 
   __SDMMC_CMDSTOP_DISABLE(SDMMCx);
+
+  /* Ignore Address Out Of Range Error, Not relevant at end of memory */
+  if (errorstate == SDMMC_ERROR_ADDR_OUT_OF_RANGE)
+  {
+    errorstate = SDMMC_ERROR_NONE;
+  }
 
   return errorstate;
 }

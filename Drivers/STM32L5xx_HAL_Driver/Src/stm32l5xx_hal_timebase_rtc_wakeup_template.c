@@ -259,6 +259,9 @@ void HAL_ResumeTick(void)
   */
 void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)
 {
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(hrtc);
+
   HAL_IncTick();
 }
 

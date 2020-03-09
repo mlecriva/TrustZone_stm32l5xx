@@ -18,7 +18,7 @@
        (+) Capacity up to 512 Kbytes with dual bank architecture supporting read-while-write
            capability (RWW)
        (+) Dual bank memory organization with possibility of 128-bits single bank
-       (+) Watermark-based secure area including PCROP and secure hide areas
+       (+) Watermark-based secure area including secure hide areas
        (+) Block-based secure pages
 
                         ##### How to use this driver #####
@@ -37,7 +37,7 @@
         (++) Configure the write protection for each area
         (++) Set the Read protection Level
         (++) Program the user Option Bytes
-        (++) Configure the watermark security for each area including PCROP and secure hide areas
+        (++) Configure the watermark security for each area including secure hide areas
         (++) Configure the boot lock (BOOT_LOCK)
         (++) Configure the Boot addresses
 
@@ -45,7 +45,7 @@
         (++) Get the value of a write protection area
         (++) Know if the read protection is activated
         (++) Get the value of the user Option Bytes
-        (++) Get the configuration of a watermark security area including PCROP and secure hide areas
+        (++) Get the configuration of a watermark security area including secure hide areas
         (++) Get the boot lock (BOOT_LOCK) configuration
         (++) Get the value of a boot address
 
@@ -108,30 +108,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-#define FLASH_CR         FLASH->SECCR           /* Alias Secure Flash memory access */
-#define FLASH_SR         FLASH->SECSR           /* Alias Secure Flash memory access */
-
-#define FLASH_CR_MER1    FLASH_SECCR_SECMER1    /* Alias Secure Mass Erase Bank1 bit */
-#define FLASH_CR_MER2    FLASH_SECCR_SECMER2    /* Alias Secure Mass Erase Bank2 bit */
-#define FLASH_CR_STRT    FLASH_SECCR_SECSTRT    /* Alias Secure Start bit */
-#define FLASH_CR_BKER    FLASH_SECCR_SECBKER    /* Alias Secure Bank Erase Selection bit */
-#define FLASH_CR_PER     FLASH_SECCR_SECPER     /* Alias Secure Page Erase bit */
-#define FLASH_CR_PNB     FLASH_SECCR_SECPNB     /* Alias Secure Page Number bits */
-#define FLASH_CR_PNB_Pos FLASH_SECCR_SECPNB_Pos /* Alias Secure Page Number bits position */
-#else
-#define FLASH_CR         FLASH->NSCR            /* Alias Legacy/Non-Secure Flash memory access */
-#define FLASH_SR         FLASH->NSSR            /* Alias Legacy/Non-Secure Flash memory access */
-
-#define FLASH_CR_MER1    FLASH_NSCR_NSMER1      /* Alias Legacy/Non-Secure Mass Erase Bank1 bit */
-#define FLASH_CR_MER2    FLASH_NSCR_NSMER2      /* Alias Legacy/Non-Secure Mass Erase Bank2 bit */
-#define FLASH_CR_STRT    FLASH_NSCR_NSSTRT      /* Alias Legacy/Non-Secure Start bit */
-#define FLASH_CR_BKER    FLASH_NSCR_NSBKER      /* Alias Legacy/Non-Secure Bank Erase Selection bit */
-#define FLASH_CR_PER     FLASH_NSCR_NSPER       /* Alias Legacy/Non-Secure Page Erase bit */
-#define FLASH_CR_PNB     FLASH_NSCR_NSPNB       /* Alias Legacy/Non-Secure Page Number bits */
-#define FLASH_CR_PNB_Pos FLASH_NSCR_NSPNB_Pos   /* Alias Legacy/Non-Secure Page Number bits position */
-#endif
-
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -143,7 +119,7 @@ static void     FLASH_OB_WRPConfig(uint32_t WRPArea, uint32_t WRPStartOffset, ui
 static void     FLASH_OB_RDPConfig(uint32_t RDPLevel);
 static void     FLASH_OB_UserConfig(uint32_t UserType, uint32_t UserConfig);
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-static void     FLASH_OB_WMSECConfig(uint32_t WMSecConfig, uint32_t WMSecStartPage, uint32_t WMSecEndPage, uint32_t WMHDPEndPage, uint32_t WMPCROPStartPage);
+static void     FLASH_OB_WMSECConfig(uint32_t WMSecConfig, uint32_t WMSecStartPage, uint32_t WMSecEndPage, uint32_t WMHDPEndPage);
 static void     FLASH_OB_BootLockConfig(uint32_t BootLockConfig);
 #endif
 static void     FLASH_OB_BootAddrConfig(uint32_t BootAddrConfig, uint32_t BootAddr);
@@ -151,7 +127,7 @@ static void     FLASH_OB_GetWRP(uint32_t WRPArea, uint32_t * WRPStartOffset, uin
 static uint32_t FLASH_OB_GetRDP(void);
 static uint32_t FLASH_OB_GetUser(void);
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-static void     FLASH_OB_GetWMSEC(uint32_t * WMSecConfig, uint32_t * WMSecStartPage, uint32_t * WMSecEndPage, uint32_t * WMHDPEndPage, uint32_t * WMPCROPStartPage);
+static void     FLASH_OB_GetWMSEC(uint32_t * WMSecConfig, uint32_t * WMSecStartPage, uint32_t * WMSecEndPage, uint32_t * WMHDPEndPage);
 static uint32_t FLASH_OB_GetBootLock(void);
 #endif
 static void     FLASH_OB_GetBootAddr(uint32_t BootAddrConfig, uint32_t * BootAddr);
@@ -193,6 +169,7 @@ HAL_StatusTypeDef HAL_FLASHEx_Erase(FLASH_EraseInitTypeDef *pEraseInit, uint32_t
 {
   HAL_StatusTypeDef status;
   uint32_t page_index;
+  __IO uint32_t *reg;
 
   /* Check the parameters */
   assert_param(IS_FLASH_TYPEERASE(pEraseInit->TypeErase));
@@ -208,7 +185,11 @@ HAL_StatusTypeDef HAL_FLASHEx_Erase(FLASH_EraseInitTypeDef *pEraseInit, uint32_t
 
   if (status == HAL_OK)
   {
-    if (pEraseInit->TypeErase == FLASH_TYPEERASE_MASSERASE)
+    pFlash.ProcedureOnGoing = pEraseInit->TypeErase;
+
+    reg = IS_FLASH_SECURE_OPERATION() ? &(FLASH->SECCR) : &(FLASH_NS->NSCR);
+
+    if ((pFlash.ProcedureOnGoing & ~(FLASH_NON_SECURE_MASK)) == FLASH_TYPEERASE_MASSERASE)
     {
       /* Mass erase to be done */
       FLASH_MassErase(pEraseInit->Banks);
@@ -238,7 +219,7 @@ HAL_StatusTypeDef HAL_FLASHEx_Erase(FLASH_EraseInitTypeDef *pEraseInit, uint32_t
     }
 
     /* If the erase operation is completed, disable the associated bits */
-    CLEAR_BIT(FLASH_CR, pEraseInit->TypeErase);
+    CLEAR_BIT((*reg), (pFlash.ProcedureOnGoing & ~(FLASH_NON_SECURE_MASK)));
   }
 
   /* Process Unlocked */
@@ -257,6 +238,7 @@ HAL_StatusTypeDef HAL_FLASHEx_Erase(FLASH_EraseInitTypeDef *pEraseInit, uint32_t
 HAL_StatusTypeDef HAL_FLASHEx_Erase_IT(FLASH_EraseInitTypeDef *pEraseInit)
 {
   HAL_StatusTypeDef status;
+  __IO uint32_t *reg_cr;
 
   /* Check the parameters */
   assert_param(IS_FLASH_TYPEERASE(pEraseInit->TypeErase));
@@ -280,11 +262,14 @@ HAL_StatusTypeDef HAL_FLASHEx_Erase_IT(FLASH_EraseInitTypeDef *pEraseInit)
     /* Set internal variables used by the IRQ handler */
     pFlash.ProcedureOnGoing = pEraseInit->TypeErase;
     pFlash.Bank = pEraseInit->Banks;
+    
+    /* Access to SECCR or NSCR depends on operation type */
+    reg_cr = IS_FLASH_SECURE_OPERATION() ? &(FLASH->SECCR) : &(FLASH->NSCR);
 
     /* Enable End of Operation and Error interrupts */
-    __HAL_FLASH_ENABLE_IT(FLASH_IT_EOP | FLASH_IT_OPERR);
+    (*reg_cr) |= (FLASH_IT_EOP | FLASH_IT_OPERR);
 
-    if (pEraseInit->TypeErase == FLASH_TYPEERASE_MASSERASE)
+    if ((pFlash.ProcedureOnGoing & ~(FLASH_NON_SECURE_MASK)) == FLASH_TYPEERASE_MASSERASE)
     {
       /* Mass erase to be done */
       FLASH_MassErase(pEraseInit->Banks);
@@ -360,8 +345,7 @@ HAL_StatusTypeDef HAL_FLASHEx_OBProgram(FLASH_OBProgramInitTypeDef *pOBInit)
     if((pOBInit->OptionType & OPTIONBYTE_WMSEC) != 0U)
     {
       /* Configure the watermark-based secure area */
-      FLASH_OB_WMSECConfig(pOBInit->WMSecConfig, pOBInit->WMSecStartPage, pOBInit->WMSecEndPage,
-                           pOBInit->WMHDPEndPage, pOBInit->WMPCROPStartPage);
+      FLASH_OB_WMSECConfig(pOBInit->WMSecConfig, pOBInit->WMSecStartPage, pOBInit->WMSecEndPage, pOBInit->WMHDPEndPage);
     }
 
     /* Unique boot entry point configuration */
@@ -425,8 +409,7 @@ void HAL_FLASHEx_OBGetConfig(FLASH_OBProgramInitTypeDef *pOBInit)
   if ((pOBInit->WMSecConfig == OB_WMSEC_AREA1) || (pOBInit->WMSecConfig == OB_WMSEC_AREA2))
   {
     pOBInit->OptionType |= OPTIONBYTE_WMSEC;
-    FLASH_OB_GetWMSEC(&(pOBInit->WMSecConfig), &(pOBInit->WMSecStartPage), &(pOBInit->WMSecEndPage),
-                      &(pOBInit->WMHDPEndPage), &(pOBInit->WMPCROPStartPage));
+    FLASH_OB_GetWMSEC(&(pOBInit->WMSecConfig), &(pOBInit->WMSecStartPage), &(pOBInit->WMSecEndPage), &(pOBInit->WMHDPEndPage));
   }
 
   pOBInit->OptionType |= OPTIONBYTE_BOOT_LOCK;
@@ -460,6 +443,8 @@ void HAL_FLASHEx_OBGetConfig(FLASH_OBProgramInitTypeDef *pOBInit)
 HAL_StatusTypeDef HAL_FLASHEx_ConfigBBAttributes(FLASH_BBAttributesTypeDef *pBBAttributes)
 {
   HAL_StatusTypeDef status;
+  uint8_t index;
+  __IO uint32_t *reg;
 
   /* Check the parameters */
   assert_param(IS_FLASH_BANK_EXCLUSIVE(pBBAttributes->Bank));
@@ -469,69 +454,27 @@ HAL_StatusTypeDef HAL_FLASHEx_ConfigBBAttributes(FLASH_BBAttributesTypeDef *pBBA
 
   if (status == HAL_OK)
   {
-    if (pBBAttributes->Bank == FLASH_BANK_1)
+    if (pBBAttributes->BBAttributesType == FLASH_BB_SEC)
     {
-      if (pBBAttributes->BBAttributesType == FLASH_BB_SEC)
+      if (pBBAttributes->Bank == FLASH_BANK_1)
       {
-        /* Modify the register values and check that new attributes are taken in account */
-        FLASH->SECBB1R1 = pBBAttributes->BBReg1;
-        if (FLASH->SECBB1R1 != pBBAttributes->BBReg1)
-        {
-          status = HAL_ERROR;
-        }
-        
-        FLASH->SECBB1R2 = pBBAttributes->BBReg2;
-        if (FLASH->SECBB1R2 != pBBAttributes->BBReg2)
-        {
-          status = HAL_ERROR;
-        }
-        
-        FLASH->SECBB1R3 = pBBAttributes->BBReg3;
-        if (FLASH->SECBB1R3 != pBBAttributes->BBReg3)
-        {
-          status = HAL_ERROR;
-        }
-        
-        FLASH->SECBB1R4 = pBBAttributes->BBReg4;
-        if (FLASH->SECBB1R4 != pBBAttributes->BBReg4)
-        {
-          status = HAL_ERROR;
-        }
+        reg = &(FLASH->SECBB1R1);
       }
-    }
-    else if (pBBAttributes->Bank == FLASH_BANK_2)
-    {
-      if (pBBAttributes->BBAttributesType == FLASH_BB_SEC)
+      else
       {
-        /* Modify the register values and check that new attributes are taken in account */
-        FLASH->SECBB2R1 = pBBAttributes->BBReg1;
-        if (FLASH->SECBB2R1 != pBBAttributes->BBReg1)
-        {
-          status = HAL_ERROR;
-        }
-        
-        FLASH->SECBB2R2 = pBBAttributes->BBReg2;
-        if (FLASH->SECBB2R2 != pBBAttributes->BBReg2)
-        {
-          status = HAL_ERROR;
-        }
-        
-        FLASH->SECBB2R3 = pBBAttributes->BBReg3;
-        if (FLASH->SECBB2R3 != pBBAttributes->BBReg3)
-        {
-          status = HAL_ERROR;
-        }
-        
-        FLASH->SECBB2R4 = pBBAttributes->BBReg4;
-        if (FLASH->SECBB2R4 != pBBAttributes->BBReg4)
-        {
-          status = HAL_ERROR;
-        }
+        reg = &(FLASH->SECBB2R1);
       }
-    }
-    else
-    {
-      /* Empty statement (to be compliant MISRA 15.7) */
+
+      /* Modify the register values and check that new attributes are taken in account */
+      for (index = 0; index < FLASH_BLOCKBASED_NB_REG; index++)
+      {
+        *reg = pBBAttributes->BBAttributes_array[index];
+        if (*reg != pBBAttributes->BBAttributes_array[index])
+        {
+          status = HAL_ERROR;
+        }
+        reg++;
+      }
     }
 
     /* ISB instruction is called to be sure next instructions are performed with correct attributes */
@@ -556,32 +499,28 @@ HAL_StatusTypeDef HAL_FLASHEx_ConfigBBAttributes(FLASH_BBAttributesTypeDef *pBBA
   */
 void HAL_FLASHEx_GetConfigBBAttributes(FLASH_BBAttributesTypeDef *pBBAttributes)
 {
+  uint8_t index;
+  __IO uint32_t *reg;
+
   /* Check the parameters */
   assert_param(IS_FLASH_BANK_EXCLUSIVE(pBBAttributes->Bank));
 
-  if (pBBAttributes->Bank == FLASH_BANK_1)
+  if (pBBAttributes->BBAttributesType == FLASH_BB_SEC)
   {
-    if (pBBAttributes->BBAttributesType == FLASH_BB_SEC)
+    if (pBBAttributes->Bank == FLASH_BANK_1)
     {
-      pBBAttributes->BBReg1 = FLASH->SECBB1R1;
-      pBBAttributes->BBReg2 = FLASH->SECBB1R2;
-      pBBAttributes->BBReg3 = FLASH->SECBB1R3;
-      pBBAttributes->BBReg4 = FLASH->SECBB1R4;
+      reg = &(FLASH->SECBB1R1);
     }
-  }
-  else if (pBBAttributes->Bank == FLASH_BANK_2)
-  {
-    if (pBBAttributes->BBAttributesType == FLASH_BB_SEC)
+    else
     {
-      pBBAttributes->BBReg1 = FLASH->SECBB2R1;
-      pBBAttributes->BBReg2 = FLASH->SECBB2R2;
-      pBBAttributes->BBReg3 = FLASH->SECBB2R3;
-      pBBAttributes->BBReg4 = FLASH->SECBB2R4;
+      reg = &(FLASH->SECBB2R1);
     }
-  }
-  else
-  {
-    /* Nothing to do */
+
+    for (index = 0; index < FLASH_BLOCKBASED_NB_REG; index++)
+    {
+      pBBAttributes->BBAttributes_array[index] = *reg;
+      reg++;
+    }
   }
 }
 
@@ -783,6 +722,19 @@ uint32_t HAL_FLASHEx_GetLVEPin(void)
   */
 static void FLASH_MassErase(uint32_t Banks)
 {
+  __IO uint32_t *reg;
+  
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+  uint32_t primask_bit;
+
+  /* Disable interrupts to avoid any interruption */
+  primask_bit = __get_PRIMASK();
+  __disable_irq();
+#endif
+  
+  /* Access to SECCR or NSCR registers depends on operation type */
+  reg = IS_FLASH_SECURE_OPERATION() ? &(FLASH->SECCR) : &(FLASH_NS->NSCR);
+
   if (READ_BIT(FLASH->OPTR, FLASH_OPTR_DBANK) != 0U)
   {
     /* Check the parameters */
@@ -791,22 +743,27 @@ static void FLASH_MassErase(uint32_t Banks)
     /* Set the Mass Erase Bit for the bank 1 if requested */
     if((Banks & FLASH_BANK_1) != 0U)
     {
-      SET_BIT(FLASH_CR, FLASH_CR_MER1);
+      SET_BIT((*reg), FLASH_NSCR_NSMER1);
     }
 
     /* Set the Mass Erase Bit for the bank 2 if requested */
     if((Banks & FLASH_BANK_2) != 0U)
     {
-      SET_BIT(FLASH_CR, FLASH_CR_MER2);
+      SET_BIT((*reg), FLASH_NSCR_NSMER2);
     }
   }
   else
   {
-    SET_BIT(FLASH_CR, (FLASH_CR_MER1 | FLASH_CR_MER2));
+    SET_BIT((*reg), (FLASH_NSCR_NSMER1 | FLASH_NSCR_NSMER2));
   }
 
   /* Proceed to erase all sectors */
-  SET_BIT(FLASH_CR, FLASH_CR_STRT);
+  SET_BIT((*reg), FLASH_NSCR_NSSTRT);
+
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+  /* Re-enable the interrupts */
+  __set_PRIMASK(primask_bit);
+#endif
 }
 
 /**
@@ -821,12 +778,25 @@ static void FLASH_MassErase(uint32_t Banks)
   */
 void FLASH_PageErase(uint32_t Page, uint32_t Banks)
 {
+  __IO uint32_t *reg;
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+  uint32_t primask_bit;
+#endif
   /* Check the parameters */
   assert_param(IS_FLASH_PAGE(Page));
 
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+  /* Disable interrupts to avoid any interruption */
+  primask_bit = __get_PRIMASK();
+  __disable_irq();
+#endif
+
+  /* Access to SECCR or NSCR registers depends on operation type */
+  reg = IS_FLASH_SECURE_OPERATION() ? &(FLASH->SECCR) : &(FLASH_NS->NSCR);
+
   if(READ_BIT(FLASH->OPTR, FLASH_OPTR_DBANK) == 0U)
   {
-    CLEAR_BIT(FLASH_CR, FLASH_CR_BKER);
+    CLEAR_BIT((*reg), FLASH_NSCR_NSBKER);
   }
   else
   {
@@ -834,17 +804,22 @@ void FLASH_PageErase(uint32_t Page, uint32_t Banks)
 
     if((Banks & FLASH_BANK_1) != 0U)
     {
-      CLEAR_BIT(FLASH_CR, FLASH_CR_BKER);
+      CLEAR_BIT((*reg), FLASH_NSCR_NSBKER);
     }
     else
     {
-      SET_BIT(FLASH_CR, FLASH_CR_BKER);
+      SET_BIT((*reg), FLASH_NSCR_NSBKER);
     }
   }
 
   /* Proceed to erase the page */
-  MODIFY_REG(FLASH_CR, (FLASH_CR_PNB | FLASH_CR_PER), ((Page << FLASH_CR_PNB_Pos) | FLASH_CR_PER));
-  SET_BIT(FLASH_CR, FLASH_CR_STRT);
+  MODIFY_REG((*reg), (FLASH_NSCR_NSPNB | FLASH_NSCR_NSPER), ((Page << FLASH_NSCR_NSPNB_Pos) | FLASH_NSCR_NSPER));
+  SET_BIT((*reg), FLASH_NSCR_NSSTRT);
+
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+  /* Re-enable the interrupts */
+  __set_PRIMASK(primask_bit);
+#endif
 }
 
 /**
@@ -1140,11 +1115,8 @@ static void FLASH_OB_UserConfig(uint32_t UserType, uint32_t UserConfig)
   *            @arg OB_WMSEC_AREA1 or @arg OB_WMSEC_AREA2: Select Flash Secure Area 1 or Area 2
   *            @arg OB_WMSEC_SECURE_AREA_CONFIG: configure Flash Secure Area
   *            @arg OB_WMSEC_HDP_AREA_CONFIG: configure Flash secure hide Area
-  *            @arg OB_WMSEC_PCROP_AREA_CONFIG: configure Flash PCROP Area
   *            @arg OB_WMSEC_HDP_AREA_ENABLE: enable secure hide Area in Secure Area
   *            @arg OB_WMSEC_HDP_AREA_DISABLE: disable secure hide Area in Secure Area
-  *            @arg OB_WMSEC_PCROP_AREA_ENABLE: enable PCROP Area in Secure Area
-  *            @arg OB_WMSEC_PCROP_AREA_DISABLE: disable PCROP Area in Secure Area
   *
   * @param  WMSecStartPage specifies the start page of the secure area
   *          This parameter can be page number between 0 and (max number of pages in the bank - 1)
@@ -1155,12 +1127,9 @@ static void FLASH_OB_UserConfig(uint32_t UserType, uint32_t UserConfig)
   * @param  WMHDPEndPage specifies the end page of the secure hide area
   *          This parameter can be page number between WMSecStartPage and WMPCROPStartPage
   *
-  * @param  WMPCROPStartPage specifies the start page of the PCROP area
-  *          This parameter can be page number between WMHDPEndPage and WMSecEndPage
-  *
   * @retval None
   */
-static void FLASH_OB_WMSECConfig(uint32_t WMSecConfig, uint32_t WMSecStartPage, uint32_t WMSecEndPage, uint32_t WMHDPEndPage, uint32_t WMPCROPStartPage)
+static void FLASH_OB_WMSECConfig(uint32_t WMSecConfig, uint32_t WMSecStartPage, uint32_t WMSecEndPage, uint32_t WMHDPEndPage)
 {
   uint32_t tmp_secwm1 = 0U, tmp_secwm2 = 0U;
 
@@ -1170,7 +1139,6 @@ static void FLASH_OB_WMSECConfig(uint32_t WMSecConfig, uint32_t WMSecStartPage, 
   assert_param(IS_FLASH_PAGE(WMSecStartPage));
   assert_param(IS_FLASH_PAGE(WMSecEndPage));
   assert_param(IS_FLASH_PAGE(WMHDPEndPage));
-  assert_param(IS_FLASH_PAGE(WMPCROPStartPage));
 
   /* Read SECWM registers */
   if ((WMSecConfig & OB_WMSEC_AREA1) != 0U)
@@ -1214,25 +1182,6 @@ static void FLASH_OB_WMSECConfig(uint32_t WMSecConfig, uint32_t WMSecStartPage, 
     tmp_secwm2 &= (~FLASH_SECWM1R2_HDP1EN);
   }
 
-  /* Configure PCROP Area */
-  if ((WMSecConfig & OB_WMSEC_PCROP_AREA_CONFIG) != 0U)
-  {
-    tmp_secwm2 &= (~(FLASH_SECWM1R2_PCROP1_PSTRT));
-    tmp_secwm2 |= WMPCROPStartPage;
-  }
-
-  /* Enable PCROP Area */
-  if ((WMSecConfig & OB_WMSEC_PCROP_AREA_ENABLE) != 0U)
-  {
-    tmp_secwm2 |= FLASH_SECWM1R2_PCROP1EN;
-  }
-
-  /* Disable PCROP Area */
-  if ((WMSecConfig & OB_WMSEC_PCROP_AREA_DISABLE) != 0U)
-  {
-    tmp_secwm2 &= (~FLASH_SECWM1R2_PCROP1EN);
-  }
-
   /* Write SECWM registers */
   if ((WMSecConfig & OB_WMSEC_AREA1) != 0U)
   {
@@ -1256,7 +1205,7 @@ static void FLASH_OB_WMSECConfig(uint32_t WMSecConfig, uint32_t WMSecStartPage, 
   * @param  BootLockConfig specifies the activation of the BOOT_LOCK.
   *          This parameter can be one of the following values:
   *            @arg OB_BOOT_LOCK_DISABLE: Boot Lock mode deactivated
-  *            @arg OB_BOOT_LCOK_ENABLE: Boot Lock mode activated
+  *            @arg OB_BOOT_LOCK_ENABLE: Boot Lock mode activated
   *
   * @retval None
   */
@@ -1412,8 +1361,6 @@ static uint32_t FLASH_OB_GetUser(void)
   *                   @arg OB_WMSEC_AREA1 or @arg OB_WMSEC_AREA2: selected Flash Secure Area 1 or Area 2
   *                   @arg OB_WMSEC_HDP_AREA_ENABLE: Secure Hide Area in Secure Area enabled
   *                   @arg OB_WMSEC_HDP_AREA_DISABLE: Secure Hide Area in Secure Area disabled
-  *                   @arg OB_WMSEC_PCROP_AREA_ENABLE: PCROP Area in Secure Area enabled
-  *                   @arg OB_WMSEC_PCROP_AREA_DISABLE: PCROP Area in Secure Area disabled
   *
   * @param  WMSecStartPage [out] specifies the address where to copied the start page of the secure area
   *
@@ -1421,11 +1368,9 @@ static uint32_t FLASH_OB_GetUser(void)
   *
   * @param  WMHDPEndPage [out] specifies the address where to copied the end page of the secure hide area
   *
-  * @param  WMPCROPStartPage [out] specifies the address where to copied the start page of the PCROP area
-  *
   * @retval None
   */
-static void FLASH_OB_GetWMSEC(uint32_t * WMSecConfig, uint32_t * WMSecStartPage, uint32_t * WMSecEndPage, uint32_t * WMHDPEndPage, uint32_t * WMPCROPStartPage)
+static void FLASH_OB_GetWMSEC(uint32_t * WMSecConfig, uint32_t * WMSecStartPage, uint32_t * WMSecEndPage, uint32_t * WMHDPEndPage)
 {
   uint32_t tmp_secwm1 = 0U, tmp_secwm2 = 0U;
 
@@ -1464,18 +1409,6 @@ static void FLASH_OB_GetWMSEC(uint32_t * WMSecConfig, uint32_t * WMSecStartPage,
   {
     *WMSecConfig = ((*WMSecConfig) | OB_WMSEC_HDP_AREA_ENABLE);
   }
-
-  /* Configuration of PCROP area */
-  *WMPCROPStartPage = (tmp_secwm2 & FLASH_SECWM1R2_PCROP1_PSTRT);
-
-  if ((tmp_secwm2 & FLASH_SECWM1R2_PCROP1EN) == 0U)
-  {
-    *WMSecConfig = ((*WMSecConfig) | OB_WMSEC_PCROP_AREA_DISABLE);
-  }
-  else
-  {
-    *WMSecConfig = ((*WMSecConfig) | OB_WMSEC_PCROP_AREA_ENABLE);
-  }
 }
 
 /**
@@ -1509,11 +1442,11 @@ static void FLASH_OB_GetBootAddr(uint32_t BootAddrConfig, uint32_t * BootAddr)
 {
   if (BootAddrConfig == OB_BOOTADDR_NS0)
   {
-    *BootAddr = FLASH->NSBOOTADD0R;
+    *BootAddr = (FLASH->NSBOOTADD0R & FLASH_NSBOOTADD0R_NSBOOTADD0);
   }
   else if (BootAddrConfig == OB_BOOTADDR_NS1)
   {
-    *BootAddr = FLASH->NSBOOTADD1R;
+    *BootAddr = (FLASH->NSBOOTADD1R & FLASH_NSBOOTADD1R_NSBOOTADD1);
   }
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
   else if (BootAddrConfig == OB_BOOTADDR_SEC0)

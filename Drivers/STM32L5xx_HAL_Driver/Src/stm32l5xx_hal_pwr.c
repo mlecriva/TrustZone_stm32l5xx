@@ -302,7 +302,7 @@ void HAL_PWR_DisableBkUpAccess(void)
 
 /**
   * @brief Configure the voltage threshold detected by the Power Voltage Detector (PVD).
-  * @param sConfigPVD: pointer to a PWR_PVDTypeDef structure that contains the PVD
+  * @param sConfigPVD pointer to a PWR_PVDTypeDef structure that contains the PVD
   *        configuration information.
   * @note Refer to the electrical characteristics of your device datasheet for
   *         more details about the voltage thresholds corresponding to each
@@ -374,7 +374,7 @@ void HAL_PWR_DisablePVD(void)
 
 /**
   * @brief Enable the WakeUp PINx functionality.
-  * @param WakeUpPinPolarity: Specifies which Wake-Up pin to enable.
+  * @param WakeUpPinPolarity specifies which Wake-Up pin to enable.
   *         This parameter can be one of the following legacy values which set the default polarity
   *         i.e. detection on high level (rising edge):
   *           @arg @ref PWR_WAKEUP_PIN1, PWR_WAKEUP_PIN2, PWR_WAKEUP_PIN3, PWR_WAKEUP_PIN4, PWR_WAKEUP_PIN5
@@ -405,7 +405,7 @@ void HAL_PWR_EnableWakeUpPin(uint32_t WakeUpPinPolarity)
 
 /**
   * @brief Disable the WakeUp PINx functionality.
-  * @param WakeUpPinx: Specifies the Power Wake-Up pin to disable.
+  * @param WakeUpPinx specifies the Power Wake-Up pin to disable.
   *         This parameter can be one of the following values:
   *           @arg @ref PWR_WAKEUP_PIN1, PWR_WAKEUP_PIN2, PWR_WAKEUP_PIN3, PWR_WAKEUP_PIN4, PWR_WAKEUP_PIN5
   * @retval None
@@ -421,7 +421,7 @@ void HAL_PWR_DisableWakeUpPin(uint32_t WakeUpPinx)
 /**
   * @brief Enter Sleep or Low-power Sleep mode.
   * @note  In Sleep/Low-power Sleep mode, all I/O pins keep the same state as in Run mode.
-  * @param Regulator: Specifies the regulator state in Sleep/Low-power Sleep mode.
+  * @param Regulator specifies the regulator state in Sleep/Low-power Sleep mode.
   *          This parameter can be one of the following values:
   *            @arg @ref PWR_MAINREGULATOR_ON Sleep mode (regulator in main mode)
   *            @arg @ref PWR_LOWPOWERREGULATOR_ON Low-power Sleep mode (regulator in low-power mode)
@@ -434,7 +434,7 @@ void HAL_PWR_DisableWakeUpPin(uint32_t WakeUpPinx)
   *        be done before calling HAL_PWR_EnterSLEEPMode() API.
   * @note  When exiting Low-power Sleep mode, the MCU is in Low-power Run mode. To move in
   *        Run mode, the user must resort to HAL_PWREx_DisableLowPowerRunMode() API.
-  * @param SLEEPEntry: Specifies if Sleep mode is entered with WFI or WFE instruction.
+  * @param SLEEPEntry specifies if Sleep mode is entered with WFI or WFE instruction.
   *           This parameter can be one of the following values:
   *            @arg @ref PWR_SLEEPENTRY_WFI enter Sleep or Low-power Sleep mode with WFI instruction
   *            @arg @ref PWR_SLEEPENTRY_WFE enter Sleep or Low-power Sleep mode with WFE instruction
@@ -511,11 +511,11 @@ void HAL_PWR_EnterSLEEPMode(uint32_t Regulator, uint8_t SLEEPEntry)
   *         startup delay is incurred when waking up.
   *         By keeping the internal regulator ON during Stop mode (Stop 0), the consumption
   *         is higher although the startup time is reduced.
-  * @param Regulator: Specifies the regulator state in Stop mode.
+  * @param Regulator specifies the regulator state in Stop mode.
   *          This parameter can be one of the following values:
   *            @arg @ref PWR_MAINREGULATOR_ON  Stop 0 mode (main regulator ON)
   *            @arg @ref PWR_LOWPOWERREGULATOR_ON  Stop 1 mode (low power regulator ON)
-  * @param STOPEntry: Specifies Stop 0 or Stop 1 mode is entered with WFI or WFE instruction.
+  * @param STOPEntry specifies Stop 0 or Stop 1 mode is entered with WFI or WFE instruction.
   *          This parameter can be one of the following values:
   *            @arg @ref PWR_STOPENTRY_WFI  Enter Stop 0 or Stop 1 mode with WFI instruction.
   *            @arg @ref PWR_STOPENTRY_WFE  Enter Stop 0 or Stop 1 mode with WFE instruction.

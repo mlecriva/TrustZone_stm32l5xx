@@ -92,24 +92,17 @@
   )
 
 #define IS_LL_COMP_OUTPUT_BLANKING_SOURCE(__COMP_INSTANCE__, __OUTPUT_BLANKING_SOURCE__)       \
-  (((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_NONE)                                  \
-    ? (                                                                                        \
-       (1UL)                                                                                   \
-      )                                                                                        \
-      :                                                                                        \
-      (((__COMP_INSTANCE__) == COMP1)                                                          \
-        ? (                                                                                    \
-              ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM1_OC5_COMP1)             \
-           || ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM2_OC3_COMP1)             \
-           || ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM3_OC3_COMP1)             \
-          )                                                                                    \
-          :                                                                                    \
-          (                                                                                    \
-              ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM3_OC4_COMP2)             \
-           || ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM8_OC5_COMP2)             \
-           || ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM15_OC1_COMP2)            \
-          )                                                                                    \
-      )                                                                                        \
+  ((((__COMP_INSTANCE__) == COMP1) &&                                                    \
+   (((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_NONE)                   ||      \
+    ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM1_OC5_COMP1)         ||      \
+    ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM2_OC3_COMP1)         ||      \
+    ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM3_OC3_COMP1)))               \
+   ||                                                                                    \
+   (((__COMP_INSTANCE__) == COMP2) &&                                                    \
+   (((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_NONE)                   ||      \
+    ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM3_OC4_COMP2)         ||      \
+    ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM8_OC5_COMP2)         ||      \
+    ((__OUTPUT_BLANKING_SOURCE__) == LL_COMP_BLANKINGSRC_TIM15_OC1_COMP2)))              \
   )
 
 /**

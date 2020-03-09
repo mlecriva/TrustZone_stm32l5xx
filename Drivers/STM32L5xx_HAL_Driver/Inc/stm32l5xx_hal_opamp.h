@@ -290,7 +290,7 @@ typedef void (*pOPAMP_CallbackTypeDef)(OPAMP_HandleTypeDef *hopamp);
   */
 
 /** @brief Reset OPAMP handle state.
-  * @param  __HANDLE__: OPAMP handle.
+  * @param  __HANDLE__ OPAMP handle.
   * @retval None
   */
 #if (USE_HAL_OPAMP_REGISTER_CALLBACKS == 1)

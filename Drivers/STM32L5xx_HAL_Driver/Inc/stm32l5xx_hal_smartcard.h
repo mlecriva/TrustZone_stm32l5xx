@@ -236,7 +236,56 @@ typedef struct __SMARTCARD_HandleTypeDef
 
   __IO uint32_t                     ErrorCode;             /*!< SmartCard Error code                                  */
 
+#if (USE_HAL_SMARTCARD_REGISTER_CALLBACKS == 1)
+  void (* TxCpltCallback)(struct __SMARTCARD_HandleTypeDef *hsmartcard);            /*!< SMARTCARD Tx Complete Callback             */
+
+  void (* RxCpltCallback)(struct __SMARTCARD_HandleTypeDef *hsmartcard);            /*!< SMARTCARD Rx Complete Callback             */
+
+  void (* ErrorCallback)(struct __SMARTCARD_HandleTypeDef *hsmartcard);             /*!< SMARTCARD Error Callback                   */
+
+  void (* AbortCpltCallback)(struct __SMARTCARD_HandleTypeDef *hsmartcard);         /*!< SMARTCARD Abort Complete Callback          */
+
+  void (* AbortTransmitCpltCallback)(struct __SMARTCARD_HandleTypeDef *hsmartcard); /*!< SMARTCARD Abort Transmit Complete Callback */
+
+  void (* AbortReceiveCpltCallback)(struct __SMARTCARD_HandleTypeDef *hsmartcard);  /*!< SMARTCARD Abort Receive Complete Callback  */
+
+  void (* RxFifoFullCallback)(struct __SMARTCARD_HandleTypeDef *hsmartcard);        /*!< SMARTCARD Rx Fifo Full Callback            */
+
+  void (* TxFifoEmptyCallback)(struct __SMARTCARD_HandleTypeDef *hsmartcard);       /*!< SMARTCARD Tx Fifo Empty Callback           */
+
+  void (* MspInitCallback)(struct __SMARTCARD_HandleTypeDef *hsmartcard);           /*!< SMARTCARD Msp Init callback                */
+
+  void (* MspDeInitCallback)(struct __SMARTCARD_HandleTypeDef *hsmartcard);         /*!< SMARTCARD Msp DeInit callback              */
+#endif  /* USE_HAL_SMARTCARD_REGISTER_CALLBACKS */
+
 } SMARTCARD_HandleTypeDef;
+
+#if (USE_HAL_SMARTCARD_REGISTER_CALLBACKS == 1)
+/**
+  * @brief  HAL SMARTCARD Callback ID enumeration definition
+  */
+typedef enum
+{
+  HAL_SMARTCARD_TX_COMPLETE_CB_ID             = 0x00U,    /*!< SMARTCARD Tx Complete Callback ID             */
+  HAL_SMARTCARD_RX_COMPLETE_CB_ID             = 0x01U,    /*!< SMARTCARD Rx Complete Callback ID             */
+  HAL_SMARTCARD_ERROR_CB_ID                   = 0x02U,    /*!< SMARTCARD Error Callback ID                   */
+  HAL_SMARTCARD_ABORT_COMPLETE_CB_ID          = 0x03U,    /*!< SMARTCARD Abort Complete Callback ID          */
+  HAL_SMARTCARD_ABORT_TRANSMIT_COMPLETE_CB_ID = 0x04U,    /*!< SMARTCARD Abort Transmit Complete Callback ID */
+  HAL_SMARTCARD_ABORT_RECEIVE_COMPLETE_CB_ID  = 0x05U,    /*!< SMARTCARD Abort Receive Complete Callback ID  */
+  HAL_SMARTCARD_RX_FIFO_FULL_CB_ID            = 0x06U,    /*!< SMARTCARD Rx Fifo Full Callback ID            */
+  HAL_SMARTCARD_TX_FIFO_EMPTY_CB_ID           = 0x07U,    /*!< SMARTCARD Tx Fifo Empty Callback ID           */
+
+  HAL_SMARTCARD_MSPINIT_CB_ID                 = 0x08U,    /*!< SMARTCARD MspInit callback ID                 */
+  HAL_SMARTCARD_MSPDEINIT_CB_ID               = 0x09U     /*!< SMARTCARD MspDeInit callback ID               */
+
+} HAL_SMARTCARD_CallbackIDTypeDef;
+
+/**
+  * @brief  HAL SMARTCARD Callback pointer definition
+  */
+typedef  void (*pSMARTCARD_CallbackTypeDef)(SMARTCARD_HandleTypeDef *hsmartcard);  /*!< pointer to an SMARTCARD callback function */
+
+#endif /* USE_HAL_SMARTCARD_REGISTER_CALLBACKS */
 
 /**
   * @brief  SMARTCARD clock sources
@@ -294,6 +343,9 @@ typedef enum
 #define HAL_SMARTCARD_ERROR_ORE              ((uint32_t)0x00000008U)         /*!< Overrun error           */
 #define HAL_SMARTCARD_ERROR_DMA              ((uint32_t)0x00000010U)         /*!< DMA transfer error      */
 #define HAL_SMARTCARD_ERROR_RTO              ((uint32_t)0x00000020U)         /*!< Receiver TimeOut error  */
+#if (USE_HAL_SMARTCARD_REGISTER_CALLBACKS == 1)
+#define HAL_SMARTCARD_ERROR_INVALID_CALLBACK ((uint32_t)0x00000040U)         /*!< Invalid Callback error  */
+#endif /* USE_HAL_SMARTCARD_REGISTER_CALLBACKS */
 /**
   * @}
   */
@@ -504,10 +556,19 @@ typedef enum
   * @param  __HANDLE__ SMARTCARD handle.
   * @retval None
   */
+#if USE_HAL_SMARTCARD_REGISTER_CALLBACKS == 1
+#define __HAL_SMARTCARD_RESET_HANDLE_STATE(__HANDLE__)  do{                                                       \
+                                                            (__HANDLE__)->gState = HAL_SMARTCARD_STATE_RESET;     \
+                                                            (__HANDLE__)->RxState = HAL_SMARTCARD_STATE_RESET;    \
+                                                            (__HANDLE__)->MspInitCallback = NULL;                 \
+                                                            (__HANDLE__)->MspDeInitCallback = NULL;               \
+                                                          } while(0U)
+#else
 #define __HAL_SMARTCARD_RESET_HANDLE_STATE(__HANDLE__)  do{                                                       \
                                                             (__HANDLE__)->gState = HAL_SMARTCARD_STATE_RESET;     \
                                                             (__HANDLE__)->RxState = HAL_SMARTCARD_STATE_RESET;    \
                                                           } while(0U)
+#endif /*USE_HAL_SMARTCARD_REGISTER_CALLBACKS  */
 
 /** @brief  Flush the Smartcard Data registers.
   * @param  __HANDLE__ specifies the SMARTCARD Handle.
@@ -1036,6 +1097,14 @@ HAL_StatusTypeDef HAL_SMARTCARD_Init(SMARTCARD_HandleTypeDef *hsmartcard);
 HAL_StatusTypeDef HAL_SMARTCARD_DeInit(SMARTCARD_HandleTypeDef *hsmartcard);
 void HAL_SMARTCARD_MspInit(SMARTCARD_HandleTypeDef *hsmartcard);
 void HAL_SMARTCARD_MspDeInit(SMARTCARD_HandleTypeDef *hsmartcard);
+
+#if (USE_HAL_SMARTCARD_REGISTER_CALLBACKS == 1)
+/* Callbacks Register/UnRegister functions  ***********************************/
+HAL_StatusTypeDef HAL_SMARTCARD_RegisterCallback(SMARTCARD_HandleTypeDef *hsmartcard,
+                                                 HAL_SMARTCARD_CallbackIDTypeDef CallbackID, pSMARTCARD_CallbackTypeDef pCallback);
+HAL_StatusTypeDef HAL_SMARTCARD_UnRegisterCallback(SMARTCARD_HandleTypeDef *hsmartcard,
+                                                   HAL_SMARTCARD_CallbackIDTypeDef CallbackID);
+#endif /* USE_HAL_SMARTCARD_REGISTER_CALLBACKS */
 
 /**
   * @}

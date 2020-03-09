@@ -1738,7 +1738,7 @@ typedef struct
   *         @arg @ref LL_ADC_AWD_CH_DAC1CH2_ADC2_INJ     (0)(1)
   *         @arg @ref LL_ADC_AWD_CH_DAC1CH2_ADC2_REG_INJ    (1)
   *
-  *         (0) On STM32L5, parameter available only on analog watchdog number: AWD1.
+  *         (0) On STM32L5, parameter available only on analog watchdog number: AWD1.\n
   *         (1) On STM32L5, parameter available only on ADC instance: ADC2.
   */
 #define __LL_ADC_ANALOGWD_CHANNEL_GROUP(__CHANNEL__, __GROUP__)                                           \
@@ -2293,11 +2293,13 @@ __STATIC_INLINE uint32_t LL_ADC_GetCommonClock(ADC_Common_TypeDef *ADCxy_COMMON)
 }
 
 /**
-  * @brief  Set parameter common to several ADC: measurement path to internal
-  *         channels (VrefInt, temperature sensor, ...).
+  * @brief  Set parameter common to several ADC: measurement path to
+  *         internal channels (VrefInt, temperature sensor, ...).
+  *         Configure all paths (overwrite current configuration).
   * @note   One or several values can be selected.
   *         Example: (LL_ADC_PATH_INTERNAL_VREFINT |
   *                   LL_ADC_PATH_INTERNAL_TEMPSENSOR)
+  *         The values not selected are removed from configuration.
   * @note   Stabilization time of measurement path to internal channel:
   *         After enabling internal paths, before starting ADC conversion,
   *         a delay is required for internal voltage reference and
@@ -2330,6 +2332,77 @@ __STATIC_INLINE uint32_t LL_ADC_GetCommonClock(ADC_Common_TypeDef *ADCxy_COMMON)
 __STATIC_INLINE void LL_ADC_SetCommonPathInternalCh(ADC_Common_TypeDef *ADCxy_COMMON, uint32_t PathInternal)
 {
   MODIFY_REG(ADCxy_COMMON->CCR, ADC_CCR_VREFEN | ADC_CCR_TSEN | ADC_CCR_VBATEN, PathInternal);
+}
+
+/**
+  * @brief  Set parameter common to several ADC: measurement path to
+  *         internal channels (VrefInt, temperature sensor, ...).
+  *         Add paths to the current configuration.
+  * @note   One or several values can be selected.
+  *         Example: (LL_ADC_PATH_INTERNAL_VREFINT |
+  *                   LL_ADC_PATH_INTERNAL_TEMPSENSOR)
+  * @note   Stabilization time of measurement path to internal channel:
+  *         After enabling internal paths, before starting ADC conversion,
+  *         a delay is required for internal voltage reference and
+  *         temperature sensor stabilization time.
+  *         Refer to device datasheet.
+  *         Refer to literal @ref LL_ADC_DELAY_VREFINT_STAB_US.
+  *         Refer to literal @ref LL_ADC_DELAY_TEMPSENSOR_STAB_US.
+  * @note   ADC internal channel sampling time constraint:
+  *         For ADC conversion of internal channels,
+  *         a sampling time minimum value is required.
+  *         Refer to device datasheet.
+  * @note   On this STM32 serie, setting of this feature is conditioned to
+  *         ADC state:
+  *         All ADC instances of the ADC common group must be disabled.
+  *         This check can be done with function @ref LL_ADC_IsEnabled() for each
+  *         ADC instance or by using helper macro helper macro
+  *         @ref __LL_ADC_IS_ENABLED_ALL_COMMON_INSTANCE().
+  * @rmtoll CCR      VREFEN         LL_ADC_SetCommonPathInternalChAdd\n
+  *         CCR      TSEN           LL_ADC_SetCommonPathInternalChAdd\n
+  *         CCR      VBATEN         LL_ADC_SetCommonPathInternalChAdd
+  * @param  ADCxy_COMMON ADC common instance
+  *         (can be set directly from CMSIS definition or by using helper macro @ref __LL_ADC_COMMON_INSTANCE() )
+  * @param  PathInternal This parameter can be a combination of the following values:
+  *         @arg @ref LL_ADC_PATH_INTERNAL_NONE
+  *         @arg @ref LL_ADC_PATH_INTERNAL_VREFINT
+  *         @arg @ref LL_ADC_PATH_INTERNAL_TEMPSENSOR
+  *         @arg @ref LL_ADC_PATH_INTERNAL_VBAT
+  * @retval None
+  */
+__STATIC_INLINE void LL_ADC_SetCommonPathInternalChAdd(ADC_Common_TypeDef *ADCxy_COMMON, uint32_t PathInternal)
+{
+  SET_BIT(ADCxy_COMMON->CCR, PathInternal);
+}
+
+/**
+  * @brief  Set parameter common to several ADC: measurement path to
+  *         internal channels (VrefInt, temperature sensor, ...).
+  *         Remove paths to the current configuration.
+  * @note   One or several values can be selected.
+  *         Example: (LL_ADC_PATH_INTERNAL_VREFINT |
+  *                   LL_ADC_PATH_INTERNAL_TEMPSENSOR)
+  * @note   On this STM32 serie, setting of this feature is conditioned to
+  *         ADC state:
+  *         All ADC instances of the ADC common group must be disabled.
+  *         This check can be done with function @ref LL_ADC_IsEnabled() for each
+  *         ADC instance or by using helper macro helper macro
+  *         @ref __LL_ADC_IS_ENABLED_ALL_COMMON_INSTANCE().
+  * @rmtoll CCR      VREFEN         LL_ADC_SetCommonPathInternalChRem\n
+  *         CCR      TSEN           LL_ADC_SetCommonPathInternalChRem\n
+  *         CCR      VBATEN         LL_ADC_SetCommonPathInternalChRem
+  * @param  ADCxy_COMMON ADC common instance
+  *         (can be set directly from CMSIS definition or by using helper macro @ref __LL_ADC_COMMON_INSTANCE() )
+  * @param  PathInternal This parameter can be a combination of the following values:
+  *         @arg @ref LL_ADC_PATH_INTERNAL_NONE
+  *         @arg @ref LL_ADC_PATH_INTERNAL_VREFINT
+  *         @arg @ref LL_ADC_PATH_INTERNAL_TEMPSENSOR
+  *         @arg @ref LL_ADC_PATH_INTERNAL_VBAT
+  * @retval None
+  */
+__STATIC_INLINE void LL_ADC_SetCommonPathInternalChRem(ADC_Common_TypeDef *ADCxy_COMMON, uint32_t PathInternal)
+{
+  CLEAR_BIT(ADCxy_COMMON->CCR, PathInternal);
 }
 
 /**
@@ -2516,9 +2589,12 @@ __STATIC_INLINE uint32_t LL_ADC_GetDataAlignment(ADC_TypeDef *ADCx)
   *           Moreover, this avoids risk of overrun for low frequency
   *           applications.
   *           How to use this low power mode:
-  *           - Do not use with interruption or DMA since these modes
-  *             have to clear immediately the EOC flag to free the
-  *             IRQ vector sequencer.
+  *           - It is not recommended to use with interruption or DMA
+  *             since these modes have to clear immediately the EOC flag
+  *             (by CPU to free the IRQ pending event or by DMA).
+  *             Auto wait will work but fort a very short time, discarding
+  *             its intended benefit (except specific case of high load of CPU
+  *             or DMA transfers which can justify usage of auto wait).
   *           - Do use with polling: 1. Start conversion,
   *             2. Later on, when conversion data is needed: poll for end of
   *             conversion  to ensure that conversion is completed and
@@ -2569,9 +2645,12 @@ __STATIC_INLINE void LL_ADC_SetLowPowerMode(ADC_TypeDef *ADCx, uint32_t LowPower
   *           Moreover, this avoids risk of overrun for low frequency
   *           applications.
   *           How to use this low power mode:
-  *           - Do not use with interruption or DMA since these modes
-  *             have to clear immediately the EOC flag to free the
-  *             IRQ vector sequencer.
+  *           - It is not recommended to use with interruption or DMA
+  *             since these modes have to clear immediately the EOC flag
+  *             (by CPU to free the IRQ pending event or by DMA).
+  *             Auto wait will work but fort a very short time, discarding
+  *             its intended benefit (except specific case of high load of CPU
+  *             or DMA transfers which can justify usage of auto wait).
   *           - Do use with polling: 1. Start conversion,
   *             2. Later on, when conversion data is needed: poll for end of
   *             conversion  to ensure that conversion is completed and
@@ -4848,24 +4927,8 @@ __STATIC_INLINE void LL_ADC_SetAnalogWDMonitChannels(ADC_TypeDef *ADCx, uint32_t
   *         @arg @ref LL_ADC_AWD_CHANNEL_18_REG          (0)
   *         @arg @ref LL_ADC_AWD_CHANNEL_18_INJ          (0)
   *         @arg @ref LL_ADC_AWD_CHANNEL_18_REG_INJ
-  *         @arg @ref LL_ADC_AWD_CH_VREFINT_REG          (0)
-  *         @arg @ref LL_ADC_AWD_CH_VREFINT_INJ          (0)
-  *         @arg @ref LL_ADC_AWD_CH_VREFINT_REG_INJ
-  *         @arg @ref LL_ADC_AWD_CH_TEMPSENSOR_REG       (0)
-  *         @arg @ref LL_ADC_AWD_CH_TEMPSENSOR_INJ       (0)
-  *         @arg @ref LL_ADC_AWD_CH_TEMPSENSOR_REG_INJ
-  *         @arg @ref LL_ADC_AWD_CH_VBAT_REG             (0)
-  *         @arg @ref LL_ADC_AWD_CH_VBAT_INJ             (0)
-  *         @arg @ref LL_ADC_AWD_CH_VBAT_REG_INJ
-  *         @arg @ref LL_ADC_AWD_CH_DAC1CH1_ADC2_REG     (0)(1)
-  *         @arg @ref LL_ADC_AWD_CH_DAC1CH1_ADC2_INJ     (0)(1)
-  *         @arg @ref LL_ADC_AWD_CH_DAC1CH1_ADC2_REG_INJ    (1)
-  *         @arg @ref LL_ADC_AWD_CH_DAC1CH2_ADC2_REG     (0)(1)
-  *         @arg @ref LL_ADC_AWD_CH_DAC1CH2_ADC2_INJ     (0)(1)
-  *         @arg @ref LL_ADC_AWD_CH_DAC1CH2_ADC2_REG_INJ    (1)
   *
-  *         (0) On STM32L5, parameter available only on analog watchdog number: AWD1.\n
-  *         (1) On STM32L5, parameter available only on ADC instance: ADC2.
+  *         (0) On STM32L5, parameter available only on analog watchdog number: AWD1.
   */
 __STATIC_INLINE uint32_t LL_ADC_GetAnalogWDMonitChannels(ADC_TypeDef *ADCx, uint32_t AWDy)
 {

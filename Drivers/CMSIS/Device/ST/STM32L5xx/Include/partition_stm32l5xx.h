@@ -3,7 +3,7 @@
   * @file    partition_stm32l5xx.h
   * @author  MCD Application Team
   * @brief   CMSIS STM32L5xx Device Header File for Initial Setup for
-  *          Secure / Non-Secure Zones based on CMSIS CORE V5.3.1 
+  *          Secure / Non-Secure Zones based on CMSIS CORE V5.3.1
   *
   *          The file is included in system_stm32l5xx_s.c in secure application.
   *          It includes the configuration section that allows to select the

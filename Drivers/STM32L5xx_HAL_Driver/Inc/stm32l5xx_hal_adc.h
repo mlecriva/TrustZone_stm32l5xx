@@ -121,8 +121,8 @@ typedef struct
                                        This feature automatically adapts the frequency of ADC conversions triggers to the speed of the system that reads the data. Moreover, this avoids risk of overrun
                                        for low frequency applications.
                                        This parameter can be set to ENABLE or DISABLE.
-                                       Note: Do not use with interruption or DMA (HAL_ADC_Start_IT(), HAL_ADC_Start_DMA()) since they clear immediately the EOC flag
-                                             to free the IRQ vector sequencer.
+                                       Note: It is not recommended to use with interruption or DMA (HAL_ADC_Start_IT(), HAL_ADC_Start_DMA()) since these modes have to clear immediately the EOC flag (by CPU to free the IRQ pending event or by DMA).
+                                             Auto wait will work but fort a very short time, discarding its intended benefit (except specific case of high load of CPU or DMA transfers which can justify usage of auto wait).
                                              Do use with polling: 1. Start conversion with HAL_ADC_Start(), 2. Later on, when ADC conversion data is needed:
                                              use HAL_ADC_PollForConversion() to ensure that conversion is completed and HAL_ADC_GetValue() to retrieve conversion result and trig another conversion start.
                                              (in case of usage of ADC group injected, use the equivalent functions HAL_ADCExInjected_Start(), HAL_ADCEx_InjectedGetValue(), ...). */
@@ -1126,12 +1126,12 @@ typedef  void (*pADC_CallbackTypeDef)(ADC_HandleTypeDef *hadc); /*!< pointer to 
   *         number is returned, either defined with number
   *         or with bitfield (only one bit must be set).
   * @param  __CHANNEL__ This parameter can be one of the following values:
-  *         @arg @ref ADC_CHANNEL_0            (1)
-  *         @arg @ref ADC_CHANNEL_1            (1)
-  *         @arg @ref ADC_CHANNEL_2            (1)
-  *         @arg @ref ADC_CHANNEL_3            (1)
-  *         @arg @ref ADC_CHANNEL_4            (1)
-  *         @arg @ref ADC_CHANNEL_5            (1)
+  *         @arg @ref ADC_CHANNEL_0            (7)
+  *         @arg @ref ADC_CHANNEL_1            (7)
+  *         @arg @ref ADC_CHANNEL_2            (7)
+  *         @arg @ref ADC_CHANNEL_3            (7)
+  *         @arg @ref ADC_CHANNEL_4            (7)
+  *         @arg @ref ADC_CHANNEL_5            (7)
   *         @arg @ref ADC_CHANNEL_6
   *         @arg @ref ADC_CHANNEL_7
   *         @arg @ref ADC_CHANNEL_8
@@ -1148,10 +1148,12 @@ typedef  void (*pADC_CallbackTypeDef)(ADC_HandleTypeDef *hadc); /*!< pointer to 
   *         @arg @ref ADC_CHANNEL_VREFINT
   *         @arg @ref ADC_CHANNEL_TEMPSENSOR
   *         @arg @ref ADC_CHANNEL_VBAT
-  *         @arg @ref ADC_CHANNEL_DAC1CH1_ADC2
-  *         @arg @ref ADC_CHANNEL_DAC1CH1_ADC2
+  *         @arg @ref ADC_CHANNEL_DAC1CH1_ADC2 (2)(6)
+  *         @arg @ref ADC_CHANNEL_DAC1CH2_ADC2 (2)(6)
   *         
-  *         (1) On STM32L5, fast channel (0.188 us for 12-bit resolution (ADC conversion rate up to 5.33 Ms/s)).
+  *         (2) On STM32L5, parameter available only on ADC instance: ADC2.\n
+  *         (6) On STM32L5, parameter available on devices with several ADC instances.\n
+  *         (7) On STM32L5, fast channel (0.188 us for 12-bit resolution (ADC conversion rate up to 5.33 Ms/s)).
   *             Other channels are slow channels (0.238 us for 12-bit resolution (ADC conversion rate up to 4.21 Ms/s)).
   * @retval Value between Min_Data=0 and Max_Data=18
   */
@@ -1242,9 +1244,11 @@ typedef  void (*pADC_CallbackTypeDef)(ADC_HandleTypeDef *hadc); /*!< pointer to 
   *         @arg @ref ADC_CHANNEL_VREFINT
   *         @arg @ref ADC_CHANNEL_TEMPSENSOR
   *         @arg @ref ADC_CHANNEL_VBAT
-  *         @arg @ref ADC_CHANNEL_DAC1CH1_ADC2
-  *         @arg @ref ADC_CHANNEL_DAC1CH1_ADC2
+  *         @arg @ref ADC_CHANNEL_DAC1CH1_ADC2 (2)(6)
+  *         @arg @ref ADC_CHANNEL_DAC1CH2_ADC2 (2)(6)
   *         
+  *         (2) On STM32L5, parameter available only on ADC instance: ADC2.\n
+  *         (6) On STM32L5, parameter available on devices with several ADC instances.\n
   *         (7) On STM32L5, fast channel (0.188 us for 12-bit resolution (ADC conversion rate up to 5.33 Ms/s)).
   *             Other channels are slow channels (0.238 us for 12-bit resolution (ADC conversion rate up to 4.21 Ms/s)).
   * @retval Value "0" if the channel corresponds to a parameter definition of a ADC external channel (channel connected to a GPIO pin).
@@ -1289,9 +1293,11 @@ typedef  void (*pADC_CallbackTypeDef)(ADC_HandleTypeDef *hadc); /*!< pointer to 
   *         @arg @ref ADC_CHANNEL_VREFINT
   *         @arg @ref ADC_CHANNEL_TEMPSENSOR
   *         @arg @ref ADC_CHANNEL_VBAT
-  *         @arg @ref ADC_CHANNEL_DAC1CH1_ADC2
-  *         @arg @ref ADC_CHANNEL_DAC1CH2_ADC2
+  *         @arg @ref ADC_CHANNEL_DAC1CH1_ADC2 (2)(6)
+  *         @arg @ref ADC_CHANNEL_DAC1CH2_ADC2 (2)(6)
   *         
+  *         (2) On STM32L5, parameter available only on ADC instance: ADC2.\n
+  *         (6) On STM32L5, parameter available on devices with several ADC instances.\n
   *         (7) On STM32L5, fast channel (0.188 us for 12-bit resolution (ADC conversion rate up to 5.33 Ms/s)).
   *             Other channels are slow channels (0.238 us for 12-bit resolution (ADC conversion rate up to 4.21 Ms/s)).
   * @retval Returned value can be one of the following values:

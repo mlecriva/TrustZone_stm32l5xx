@@ -679,8 +679,8 @@ typedef struct
   */
 #define RTC_PRIVILEGE_FEATURE_NONE           0u
 #define RTC_PRIVILEGE_FEATURE_INIT           RTC_PRIVCR_INITPRIV  /*!< Initialization */
-#define RTC_PRIVILEGE_FEATURE_CAL            RTC_PRIVCR_CALDPRIV  /*!< Calibration */
-#define RTC_PRIVILEGE_FEATURE_TS             RTC_PRIVCR_TSDPRIV   /*!< Time stamp */
+#define RTC_PRIVILEGE_FEATURE_CAL            RTC_PRIVCR_CALPRIV   /*!< Calibration */
+#define RTC_PRIVILEGE_FEATURE_TS             RTC_PRIVCR_TSPRIV    /*!< Time stamp */
 #define RTC_PRIVILEGE_FEATURE_WUT            RTC_PRIVCR_WUTPRIV   /*!< Wake up timer */
 #define RTC_PRIVILEGE_FEATURE_ALRA           RTC_PRIVCR_ALRAPRIV  /*!< Alarm A */
 #define RTC_PRIVILEGE_FEATURE_ALRB           RTC_PRIVCR_ALRBPRIV  /*!< Alarm B */
@@ -1108,7 +1108,7 @@ typedef struct
   *            @arg  RTC_TAMPER_8: Tamper8
   * @retval None
   */
-#define __HAL_RTC_TAMPER_ENABLE(__HANDLE__, __TAMPER__)           ((TAMP->CR1 |= (__TAMPER__))
+#define __HAL_RTC_TAMPER_ENABLE(__HANDLE__, __TAMPER__)           (TAMP->CR1 |= (__TAMPER__))
 
 /**
   * @brief  Disable the TAMP Tamper input detection.
@@ -1125,7 +1125,7 @@ typedef struct
   *            @arg  RTC_TAMPER_7: Tamper7
   *            @arg  RTC_TAMPER_8: Tamper8
   */
-#define __HAL_RTC_TAMPER_DISABLE(__HANDLE__, __TAMPER__)           ((TAMP->CR1 &= ~(__TAMPER__))
+#define __HAL_RTC_TAMPER_DISABLE(__HANDLE__, __TAMPER__)           (TAMP->CR1 &= ~(__TAMPER__))
 
 
 /**************************************************************************************************/
@@ -1145,7 +1145,7 @@ typedef struct
   *            @arg  RTC_IT_TAMP_8: Tamper8 interrupt
   * @retval None
   */
-#define __HAL_RTC_TAMPER_ENABLE_IT(__HANDLE__, __INTERRUPT__)        ((TAMP->IER |= (__INTERRUPT__))
+#define __HAL_RTC_TAMPER_ENABLE_IT(__HANDLE__, __INTERRUPT__)        (TAMP->IER |= (__INTERRUPT__))
 
 /**
   * @brief  Disable the TAMP Tamper interrupt.
@@ -1163,7 +1163,7 @@ typedef struct
   *            @arg  RTC_IT_TAMP_8: Tamper8 interrupt
   * @retval None
   */
-#define __HAL_RTC_TAMPER_DISABLE_IT(__HANDLE__, __INTERRUPT__)       ((TAMP->IER &= ~(__INTERRUPT__))
+#define __HAL_RTC_TAMPER_DISABLE_IT(__HANDLE__, __INTERRUPT__)       (TAMP->IER &= ~(__INTERRUPT__))
 
 
 /**************************************************************************************************/
@@ -1189,7 +1189,7 @@ typedef struct
   *            @arg  RTC_IT_INT_TAMP_8: Internal Tamper8 interrupt
   * @retval None
   */
-#define __HAL_RTC_TAMPER_GET_IT(__HANDLE__, __INTERRUPT__)     (((((TAMP->MISR) & (__INTERRUPT__)) != 0U) ? 1UL : 0UL)
+#define __HAL_RTC_TAMPER_GET_IT(__HANDLE__, __INTERRUPT__)     ((((TAMP->MISR) & (__INTERRUPT__)) != 0U) ? 1UL : 0UL)
 
 
 /**
@@ -1214,7 +1214,7 @@ typedef struct
   *            @arg  RTC_IT_INT_TAMP_8: Internal Tamper8 interrupt
   * @retval None
   */
-#define __HAL_RTC_TAMPER_GET_IT_SOURCE(__HANDLE__, __INTERRUPT__)    (((((TAMP->IER) & (__INTERRUPT__)) != 0U) ? 1UL : 0UL)
+#define __HAL_RTC_TAMPER_GET_IT_SOURCE(__HANDLE__, __INTERRUPT__)    ((((TAMP->IER) & (__INTERRUPT__)) != 0U) ? 1UL : 0UL)
 
 
 /**
@@ -1238,7 +1238,7 @@ typedef struct
   *             @arg RTC_FLAG_INT_TAMP_8: Internal Tamper8 flag
   * @retval None
   */
-#define __HAL_RTC_TAMPER_GET_FLAG(__HANDLE__, __FLAG__)        ((((TAMP->SR) & (__FLAG__)) != 0U)
+#define __HAL_RTC_TAMPER_GET_FLAG(__HANDLE__, __FLAG__)        (((TAMP->SR) & (__FLAG__)) != 0U)
 
 /**
   * @brief  Clear the RTC Tamper's pending flags.
@@ -1262,7 +1262,7 @@ typedef struct
   *             @arg RTC_FLAG_INT_TAMP_8: Internal Tamper8 flag
   * @retval None
   */
-#define __HAL_RTC_TAMPER_CLEAR_FLAG(__HANDLE__, __FLAG__)      (((TAMP->SCR) = (__FLAG__))
+#define __HAL_RTC_TAMPER_CLEAR_FLAG(__HANDLE__, __FLAG__)      ((TAMP->SCR) = (__FLAG__))
 
 /**
   * @brief  Enable interrupt on the RTC tamper associated Exti line.
@@ -1411,9 +1411,9 @@ uint32_t          HAL_RTCEx_BKUPRead(RTC_HandleTypeDef *hrtc, uint32_t BackupReg
 /** @defgroup RTCEx_Exported_Functions_Group7 Extended RTC secure functions
  * @{
  */
-HAL_StatusTypeDef HAL_RTCEx_SecureModeGet(RTC_HandleTypeDef *hrtc, RTC_SecureStateTypeDef  *features);
+HAL_StatusTypeDef HAL_RTCEx_SecureModeGet(RTC_HandleTypeDef *hrtc, RTC_SecureStateTypeDef  *secureState);
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-HAL_StatusTypeDef HAL_RTCEx_SecureModeSet(RTC_HandleTypeDef *hrtc, RTC_SecureStateTypeDef  *features);
+HAL_StatusTypeDef HAL_RTCEx_SecureModeSet(RTC_HandleTypeDef *hrtc, RTC_SecureStateTypeDef  *secureState);
 #endif /* #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U) */
 /**
   * @}
@@ -1422,8 +1422,8 @@ HAL_StatusTypeDef HAL_RTCEx_SecureModeSet(RTC_HandleTypeDef *hrtc, RTC_SecureSta
 /** @defgroup RTCEx_Exported_Functions_Group8 Extended RTC privilege functions
  * @{
  */
-HAL_StatusTypeDef HAL_RTCEx_PrivilegeModeSet(RTC_HandleTypeDef *hrtc, RTC_PrivilegeStateTypeDef *features);
-HAL_StatusTypeDef HAL_RTCEx_PrivilegeModeGet(RTC_HandleTypeDef *hrtc, RTC_PrivilegeStateTypeDef *features);
+HAL_StatusTypeDef HAL_RTCEx_PrivilegeModeSet(RTC_HandleTypeDef *hrtc, RTC_PrivilegeStateTypeDef *privilegeState);
+HAL_StatusTypeDef HAL_RTCEx_PrivilegeModeGet(RTC_HandleTypeDef *hrtc, RTC_PrivilegeStateTypeDef *privilegeState);
 /**
   * @}
   */

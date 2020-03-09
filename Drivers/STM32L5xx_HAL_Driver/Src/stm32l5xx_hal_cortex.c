@@ -180,7 +180,7 @@ void HAL_NVIC_SetPriorityGrouping(uint32_t PriorityGroup)
   */
 void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t SubPriority)
 {
-  uint32_t prioritygroup = 0x00;
+  uint32_t prioritygroup;
 
   /* Check the parameters */
   assert_param(IS_NVIC_SUB_PRIORITY(SubPriority));
