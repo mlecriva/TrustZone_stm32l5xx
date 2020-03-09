@@ -29,7 +29,7 @@ INC = Inc
 HAL_SRC_PATH 			= ../Drivers/STM32L5xx_HAL_Driver/Src
 HAL_INC_PATH 			= ../Drivers/STM32L5xx_HAL_Driver/Inc
 HAL_INC_LEGACY_PATH 	= ../Drivers/STM32L5xx_HAL_Driver/Inc/Legacy
-CMSIS_INC_PATH 			= ../Drivers/CMSIS
+CMSIS_INC_PATH 			= ../Drivers/CMSIS/Include
 CMSIS_DEVICE_INC_PATH 	= ../Drivers/CMSIS/Device/ST/STM32L5xx/Include
 ######################################
 # HAL_sources
